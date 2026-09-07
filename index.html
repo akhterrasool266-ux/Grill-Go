@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Grill & Go</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B1B1B">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand-row">
+      <span class="brand-mark" id="brandMark">Grill & Go</span>
+    </div>
+    <div class="brand-tagline" id="brandTagline">Fast fire, fast food</div>
+    <div class="search-bar">🔍 <span>Search burgers, pizza, drinks...</span></div>
+  </div>
+
+  <div class="install-banner" id="installBanner">
+    <div class="install-text">Add Grill & Go to your home screen for faster ordering</div>
+    <button class="install-btn" onclick="triggerInstall()">Install</button>
+  </div>
+
+  <div class="section" id="offersSection">
+    <div class="section-head">
+      <div class="section-title">Today's Deals</div>
+      <a href="offers.html" class="section-link">See all</a>
+    </div>
+    <div class="offer-scroll" id="offerScroll"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Our Menu</div>
+      <a href="menu.html" class="section-link">View all</a>
+    </div>
+    <div class="cat-scroll" id="catScroll"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Most Popular</div>
+    </div>
+    <div class="item-list" id="popularList"></div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" style="display:none;">
+    <div class="modal-sheet" id="modalBody"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <a href="index.html" class="nav-item active"><span class="nav-icon">🏠</span>Home</a>
+    <a href="menu.html" class="nav-item"><span class="nav-icon">📋</span>Menu</a>
+    <a href="cart.html" class="nav-item">
+      <div class="cart-fab">🛍️<span class="cart-badge" id="cartBadge" style="display:none;">0</span></div>
+    </a>
+    <a href="offers.html" class="nav-item"><span class="nav-icon">🏷️</span>Offers</a>
+    <a href="login.html" class="nav-item"><span class="nav-icon">👤</span>Log In</a>
+  </div>
+
+<script src="js/config.js"></script>
+<script src="js/menu-data.js"></script>
+<script src="js/app.js"></script>
+<script>
+  document.getElementById('brandMark').textContent = RESTAURANT_CONFIG.name;
+  document.getElementById('brandTagline').textContent = RESTAURANT_CONFIG.tagline;
+
+  document.getElementById('offerScroll').innerHTML = MENU_OFFERS.map(o => `
+    <div class="offer-card ${o.color}">
+      <div class="offer-title">${o.title}</div>
+      <div class="offer-sub">${o.subtitle}</div>
+      <a href="offers.html" class="offer-btn">Order Now</a>
+    </div>
+  `).join('');
+
+  document.getElementById('catScroll').innerHTML = MENU_CATEGORIES.map(c => `
+    <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
+      <div class="cat-chip">
+        <div class="cat-emoji">${c.icon}</div>
+        <div class="cat-name">${c.name}</div>
+      </div>
+    </a>
+  `).join('');
+
+  const cur = RESTAURANT_CONFIG.currencySymbol;
+  const popular = MENU_ITEMS.filter(i => i.popular);
+  document.getElementById('popularList').innerHTML = popular.map(item => `
+    <div class="item-card" onclick="openItemModal('${item.id}')">
+      <div class="item-img">${item.image ? `<img src="${item.image}">` : ''}</div>
+      <div class="item-info">
+        <div class="item-name">${item.name}</div>
+        <div class="item-desc">${item.description}</div>
+        <div class="item-bottom">
+          <div class="item-price">${cur}${item.price}</div>
+          <button class="add-btn" onclick="event.stopPropagation(); openItemModal('${item.id}')">Add</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+</script>
+</body>
+</html>
