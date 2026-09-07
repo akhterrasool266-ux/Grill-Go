@@ -19,7 +19,7 @@ const MENU_ITEMS = [
     name: "Smoke Ember Burger",
     description: "Double flame-grilled patty, smoked cheddar, charred onions, ember sauce.",
     price: 850,
-    image: "",
+    image: "https://picsum.photos/seed/embergo-burger1/300/300",
     popular: true,
     sizes: [
       { id: "reg", name: "Regular", extra: 0 },
@@ -36,7 +36,7 @@ const MENU_ITEMS = [
     name: "Zinger Crunch",
     description: "Crispy fried chicken fillet, spicy mayo, iceberg lettuce.",
     price: 700,
-    image: "",
+    image: "https://picsum.photos/seed/embergo-burger2/300/300",
     popular: true,
     sizes: [
       { id: "reg", name: "Regular", extra: 0 },
@@ -52,7 +52,7 @@ const MENU_ITEMS = [
     name: "Fire Pepperoni",
     description: "Loaded pepperoni, mozzarella, chili-infused tomato base.",
     price: 1200,
-    image: "",
+    image: "https://picsum.photos/seed/embergo-pizza1/300/300",
     popular: true,
     sizes: [
       { id: "med", name: "Medium (9\")", extra: 0 },
@@ -68,7 +68,7 @@ const MENU_ITEMS = [
     name: "Ember Fries",
     description: "Hand-cut fries tossed in smoked paprika salt.",
     price: 350,
-    image: "",
+    image: "https://picsum.photos/seed/embergo-fries1/300/300",
     popular: false,
     sizes: [],
     addons: [
@@ -81,7 +81,7 @@ const MENU_ITEMS = [
     name: "Soda Can",
     description: "0.5 ltr chilled soda can.",
     price: 150,
-    image: "",
+    image: "https://picsum.photos/seed/embergo-soda1/300/300",
     popular: false,
     sizes: [],
     addons: []
