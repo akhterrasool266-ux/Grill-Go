@@ -92,6 +92,7 @@
       <h1>Access not granted</h1>
       <p class="muted">This account isn't set up as an admin for this restaurant yet. Give this UID to whoever manages Firebase and ask them to add it to <code>restaurants/{restaurantId}/admins</code>:</p>
       <div class="code-box" id="myUid"></div>
+      <p class="muted" id="debugInfo" style="font-size:11px;margin-top:8px;"></p>
       <hr class="divider">
       <button class="btn" onclick="rgSignOut()">Sign out</button>
     </div>
@@ -239,9 +240,20 @@
       hideAll();
       if (!user) { show('viewSignedOut'); return; }
 
-      const isAdmin = await window.rgCheckIsAdmin(user.uid);
+      let isAdmin = false;
+      let checkErr = null;
+      try {
+        const snap = await getDoc(docRef(`admins/${user.uid}`));
+        isAdmin = snap.exists();
+      } catch (e) {
+        checkErr = e.code || e.message;
+      }
+
       if (!isAdmin) {
         document.getElementById('myUid').textContent = user.uid;
+        document.getElementById('debugInfo').textContent = checkErr
+          ? `Checked: restaurants/${window.RG_RESTAURANT_ID}/admins/${user.uid} — Firestore error: ${checkErr}`
+          : `Checked: restaurants/${window.RG_RESTAURANT_ID}/admins/${user.uid} — no matching document found (permission denied or path mismatch).`;
         show('viewNotAdmin');
         return;
       }
