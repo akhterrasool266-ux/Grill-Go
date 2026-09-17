@@ -1,3 +1,4 @@
+
 // ============================================================
 // RESTAURANT CONFIG
 // Har naye client ke liye SIRF ye file badalni hai.
@@ -13,7 +14,7 @@ const RESTAURANT_CONFIG = {
   name: "Grill & Go",
   tagline: "Fast fire, fast food",
   logoText: "G&G",          // agar image logo na ho to text fallback
-  logoImage: "",             // future: Firebase Storage URL
+  logoImage: "",            // future: Firebase Storage URL
   currencySymbol: "Rs",
 
   // Theme — colors change per client
@@ -36,13 +37,13 @@ const RESTAURANT_CONFIG = {
   // Contact
   whatsapp: "923160000000",
 
-  // Firebase — replace with the client's real project keys before deploy
+  // Firebase — live keys (project: grill-n-go)
   firebase: {
-    apiKey: "REPLACE_ME",
-    authDomain: "REPLACE_ME.firebaseapp.com",
-    projectId: "REPLACE_ME",
-    storageBucket: "REPLACE_ME.appspot.com",
-    messagingSenderId: "REPLACE_ME",
-    appId: "REPLACE_ME"
+    apiKey: "AIzaSyAcWymN25JklZESDKnHrAJTeRC8TY3oN5M",
+    authDomain: "grill-n-go.firebaseapp.com",
+    projectId: "grill-n-go",
+    storageBucket: "grill-n-go.firebasestorage.app",
+    messagingSenderId: "583403142699",
+    appId: "1:583403142699:web:9e75cec8c7cd9fc265b46e"
   }
 };
