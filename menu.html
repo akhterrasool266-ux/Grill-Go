@@ -43,7 +43,11 @@
 <script src="js/config.js"></script>
 <script src="js/menu-data.js"></script>
 <script src="js/app.js"></script>
-<script>
+<!-- Phase 3: overlays live Firestore menu/settings onto the globals above, if configured -->
+<script type="module" src="js/firebase-init.js"></script>
+<script type="module">
+  await window.rgReady;
+
   document.getElementById('brandMark').textContent = RESTAURANT_CONFIG.name;
   const cur = RESTAURANT_CONFIG.currencySymbol;
 
@@ -60,11 +64,15 @@
     `).join('');
   }
 
-  function setCat(id) {
+  // This script is now type="module" (needed for top-level `await` above),
+  // so top-level functions are module-scoped, not automatically on window.
+  // The rendered markup calls setCat(...) via inline onclick, so it must be
+  // attached to window explicitly.
+  window.setCat = function setCat(id) {
     activeCat = id;
     renderCats();
     renderItems();
-  }
+  };
 
   function renderItems() {
     const items = activeCat === 'all'

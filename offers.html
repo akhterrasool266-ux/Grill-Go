@@ -32,7 +32,11 @@
 <script src="js/config.js"></script>
 <script src="js/menu-data.js"></script>
 <script src="js/app.js"></script>
-<script>
+<!-- Phase 3: overlays live Firestore menu/settings onto the globals above, if configured -->
+<script type="module" src="js/firebase-init.js"></script>
+<script type="module">
+  await window.rgReady;
+
   document.getElementById('offerList').innerHTML = MENU_OFFERS.map(o => `
     <div class="offer-card ${o.color}" style="min-width:auto;">
       <div class="offer-title">${o.title}</div>

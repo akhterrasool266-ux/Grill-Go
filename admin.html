@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Admin — Grill & Go</title>
+<meta name="theme-color" content="#1B1B1B">
+<style>
+  :root {
+    --ink: #1B1B1B;
+    --paper: #FFF8F0;
+    --border: #E7E1D8;
+    --gray: #8A8378;
+    --accent: #D9481F;
+    --green: #1E8E4E;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--paper); color: var(--ink); padding-bottom: 40px; }
+  .topbar { background: var(--ink); color: #fff; padding: 18px 20px; }
+  .topbar-title { font-weight: 800; font-size: 18px; }
+  .topbar-sub { font-size: 12px; color: #cfc9bf; margin-top: 2px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .center { text-align: center; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: #fff; padding: 12px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-green { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-danger { background: #fff; color: #C0392B; border-color: #C0392B; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  p.muted { color: var(--gray); font-size: 13px; line-height: 1.5; }
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  label { font-size: 12px; font-weight: 700; color: var(--gray); display: block; margin-bottom: 4px; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 2px; }
+  .tab-btn { white-space: nowrap; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .tab-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .list-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .list-row:last-child { border-bottom: none; }
+  .list-main { min-width: 0; }
+  .list-title { font-weight: 700; font-size: 14px; }
+  .list-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .list-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #EEE; color: var(--gray); text-transform: capitalize; }
+  .badge.new { background: #FDE9E2; color: var(--accent); }
+  .badge.preparing { background: #FFF3D6; color: #A8710A; }
+  .badge.out-for-delivery { background: #DDEBFF; color: #1D5CB0; }
+  .badge.completed { background: #E1F3E8; color: var(--green); }
+  .badge.cancelled { background: #F2F2F2; color: #999; }
+  .hidden { display: none !important; }
+  .code-box { background: #F5F0E8; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: monospace; font-size: 13px; word-break: break-all; user-select: all; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-title" id="brandMark">Grill & Go — Admin</div>
+    <div class="topbar-sub">Owner dashboard</div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- Not configured -->
+    <div class="card center" id="viewNotConfigured" hidden>
+      <h1>Firebase not connected</h1>
+      <p class="muted">
+        js/config.js still has placeholder Firebase keys, so there's nothing for the admin
+        panel to sign into yet. Set up your Firebase project and paste real keys into
+        <code>RESTAURANT_CONFIG.firebase</code> first — see PHASE3-SETUP.md.
+      </p>
+    </div>
+
+    <!-- Signed out -->
+    <div class="card center" id="viewSignedOut" hidden>
+      <h1>Sign in</h1>
+      <p class="muted">Sign in with the Google account you registered as an admin.</p>
+      <button class="btn btn-primary" onclick="rgSignIn().catch(e => alert('Sign-in failed: ' + e.message))">Continue with Google</button>
+    </div>
+
+    <!-- Signed in, not an admin -->
+    <div class="card" id="viewNotAdmin" hidden>
+      <h1>Access not granted</h1>
+      <p class="muted">This Google account isn't set up as an admin for this restaurant yet. Give this UID to whoever manages Firebase and ask them to add it to <code>restaurants/{restaurantId}/admins</code>:</p>
+      <div class="code-box" id="myUid"></div>
+      <hr class="divider">
+      <button class="btn" onclick="rgSignOut()">Sign out</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="viewDashboard" hidden>
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:700;" id="adminEmail"></div>
+          <div class="muted" style="font-size:12px;">Restaurant: <span id="restaurantIdLabel"></span></div>
+        </div>
+        <button class="btn btn-sm" onclick="rgSignOut()">Sign out</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="menu" onclick="switchTab('menu')">Menu</button>
+        <button class="tab-btn" data-tab="offers" onclick="switchTab('offers')">Offers</button>
+        <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">Orders</button>
+        <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+      </div>
+
+      <!-- MENU TAB -->
+      <div class="tab-panel" id="tab-menu">
+        <div class="card">
+          <h2>One-time: import demo data</h2>
+          <p class="muted">Copies the categories, items and offers currently in js/menu-data.js into Firestore as a starting point you can then edit below. Safe to run once; running again adds duplicates, so only use it on an empty menu.</p>
+          <button class="btn" onclick="importDemoData()">Import demo menu into Firestore</button>
+        </div>
+
+        <div class="card">
+          <h2>Categories</h2>
+          <div id="categoryList"></div>
+          <hr class="divider">
+          <label>Name</label><input id="catName" placeholder="e.g. Burgers">
+          <div class="row">
+            <div><label>Emoji icon</label><input id="catIcon" placeholder="🍔"></div>
+            <div><label>Sort order</label><input id="catSort" type="number" value="0"></div>
+          </div>
+          <button class="btn btn-primary" onclick="addCategory()">Add category</button>
+        </div>
+
+        <div class="card">
+          <h2>Menu items</h2>
+          <div id="itemList"></div>
+          <hr class="divider">
+          <label>Name</label><input id="itName" placeholder="e.g. Classic Beef Burger">
+          <label>Description</label><textarea id="itDesc" rows="2" placeholder="Short description shown on the card"></textarea>
+          <div class="row">
+            <div><label>Price</label><input id="itPrice" type="number" step="0.01" placeholder="0.00"></div>
+            <div><label>Category</label><select id="itCat"></select></div>
+          </div>
+          <label>Image URL (optional)</label><input id="itImage" placeholder="https://...">
+          <label>Sizes (optional — one per line: <code>Name | extra price</code>)</label>
+          <textarea id="itSizes" rows="2" placeholder="Regular | 0&#10;Double Stack | 200"></textarea>
+          <label>Addons (optional — one per line: <code>Name | price</code>)</label>
+          <textarea id="itAddons" rows="2" placeholder="Extra Cheese | 80&#10;Add Fries | 150"></textarea>
+          <div class="row">
+            <div><label>Sort order</label><input id="itSort" type="number" value="0"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:20px;">
+              <input type="checkbox" id="itPopular" style="width:auto;margin:0;"> <label style="margin:0;">Mark as popular</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="addItem()">Add item</button>
+        </div>
+      </div>
+
+      <!-- OFFERS TAB -->
+      <div class="tab-panel hidden" id="tab-offers">
+        <div class="card">
+          <h2>Offers</h2>
+          <div id="offerListAdmin"></div>
+          <hr class="divider">
+          <label>Title</label><input id="ofTitle" placeholder="e.g. 20% Off Combos">
+          <label>Subtitle</label><input id="ofSub" placeholder="e.g. This weekend only">
+          <div class="row">
+            <div>
+              <label>Color</label>
+              <select id="ofColor">
+                <option value="primary">Primary (theme orange)</option>
+                <option value="accent">Accent (theme green)</option>
+              </select>
+            </div>
+            <div><label>Sort order</label><input id="ofSort" type="number" value="0"></div>
+          </div>
+          <button class="btn btn-primary" onclick="addOffer()">Add offer</button>
+        </div>
+      </div>
+
+      <!-- ORDERS TAB -->
+      <div class="tab-panel hidden" id="tab-orders">
+        <div class="card">
+          <h2>Orders <span class="muted" style="font-weight:400;">(live)</span></h2>
+          <div id="orderList"></div>
+          <p class="muted" id="ordersEmpty" hidden>No orders yet.</p>
+        </div>
+      </div>
+
+      <!-- SETTINGS TAB -->
+      <div class="tab-panel hidden" id="tab-settings">
+        <div class="card">
+          <h2>Restaurant settings</h2>
+          <label>Restaurant name</label><input id="stName">
+          <label>Tagline</label><input id="stTagline">
+          <div class="row">
+            <div><label>Currency symbol</label><input id="stCurrency" placeholder="Rs"></div>
+            <div><label>WhatsApp number (with country code, no +)</label><input id="stWhatsapp" placeholder="923001234567"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+          <p class="muted" id="settingsSaved" hidden style="color:var(--green);font-weight:700;">Saved ✓</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script src="js/config.js"></script>
+<script src="js/menu-data.js"></script>
+<script type="module" src="js/firebase-init.js"></script>
+<script type="module">
+  import {
+    collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc,
+    onSnapshot, query, orderBy, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  await window.rgReady;
+
+  document.getElementById('brandMark').textContent = (RESTAURANT_CONFIG.name || 'Grill & Go') + ' — Admin';
+  document.getElementById('restaurantIdLabel').textContent = window.RG_RESTAURANT_ID;
+
+  const show = (id) => document.getElementById(id).hidden = false;
+  const hideAll = () => ['viewNotConfigured','viewSignedOut','viewNotAdmin','viewDashboard']
+    .forEach(id => document.getElementById(id).hidden = true);
+
+  function col(sub) { return collection(window.rgDb, `restaurants/${window.RG_RESTAURANT_ID}/${sub}`); }
+  function docRef(sub) { return doc(window.rgDb, `restaurants/${window.RG_RESTAURANT_ID}/${sub}`); }
+
+  if (!window.RG_FIREBASE_READY) {
+    hideAll();
+    show('viewNotConfigured');
+  } else {
+    window.rgOnAuth(async (user) => {
+      hideAll();
+      if (!user) { show('viewSignedOut'); return; }
+
+      const isAdmin = await window.rgCheckIsAdmin(user.uid);
+      if (!isAdmin) {
+        document.getElementById('myUid').textContent = user.uid;
+        show('viewNotAdmin');
+        return;
+      }
+
+      document.getElementById('adminEmail').textContent = user.email;
+      show('viewDashboard');
+      initDashboard();
+    });
+  }
+
+  // ---------- Tabs ----------
+  window.switchTab = function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('hidden', p.id !== `tab-${name}`));
+  };
+
+  let dashInitDone = false;
+  let categoriesCache = [];
+
+  async function initDashboard() {
+    if (dashInitDone) return;
+    dashInitDone = true;
+    await loadCategories();
+    await loadItems();
+    await loadOffers();
+    await loadSettingsIntoForm();
+    watchOrders();
+  }
+
+  // ---------- Categories ----------
+  async function loadCategories() {
+    const snap = await getDocs(query(col('categories'), orderBy('sortOrder', 'asc')));
+    categoriesCache = [];
+    snap.forEach(d => categoriesCache.push({ id: d.id, ...d.data() }));
+
+    document.getElementById('categoryList').innerHTML = categoriesCache.map(c => `
+      <div class="list-row">
+        <div class="list-main">
+          <div class="list-title">${c.icon || '🍽️'} ${c.name}</div>
+          <div class="list-sub">sort ${c.sortOrder ?? 0}</div>
+        </div>
+        <div class="list-actions">
+          <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('') || '<p class="muted">No categories yet.</p>';
+
+    document.getElementById('itCat').innerHTML = categoriesCache.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  }
+
+  window.addCategory = async function addCategory() {
+    const name = document.getElementById('catName').value.trim();
+    if (!name) return alert('Name is required.');
+    await addDoc(col('categories'), {
+      name,
+      icon: document.getElementById('catIcon').value.trim() || '🍽️',
+      sortOrder: Number(document.getElementById('catSort').value) || 0,
+      active: true
+    });
+    document.getElementById('catName').value = '';
+    document.getElementById('catIcon').value = '';
+    await loadCategories();
+  };
+
+  window.deleteCategory = async function deleteCategory(id) {
+    if (!confirm('Delete this category? Items in it will remain but show under no category until reassigned.')) return;
+    await deleteDoc(docRef(`categories/${id}`));
+    await loadCategories();
+  };
+
+  // ---------- Items ----------
+  async function loadItems() {
+    const snap = await getDocs(query(col('menuItems'), orderBy('sortOrder', 'asc')));
+    const items = [];
+    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+
+    document.getElementById('itemList').innerHTML = items.map(it => {
+      const catName = categoriesCache.find(c => c.id === it.categoryId)?.name || '—';
+      return `
+        <div class="list-row">
+          <div class="list-main">
+            <div class="list-title">${it.name} ${it.popular ? '⭐' : ''}</div>
+            <div class="list-sub">${catName} · ${RESTAURANT_CONFIG.currencySymbol}${it.price}${(it.sizes||[]).length ? ` · ${it.sizes.length} size(s)` : ''}${(it.addons||[]).length ? ` · ${it.addons.length} addon(s)` : ''}</div>
+          </div>
+          <div class="list-actions">
+            <button class="btn btn-sm btn-danger" onclick="deleteItem('${it.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join('') || '<p class="muted">No items yet.</p>';
+  }
+
+  // "Name | number" per line -> [{ id, name, extra }] or [{ id, name, price }]
+  function parseOptionLines(text, valueKey, idPrefix) {
+    return text.split('\n').map(l => l.trim()).filter(Boolean).map((line, i) => {
+      const [name, raw] = line.split('|').map(s => (s || '').trim());
+      return { id: `${idPrefix}${i}-${Date.now().toString(36)}`, name, [valueKey]: Number(raw) || 0 };
+    });
+  }
+
+  window.addItem = async function addItem() {
+    const name = document.getElementById('itName').value.trim();
+    const price = Number(document.getElementById('itPrice').value);
+    const categoryId = document.getElementById('itCat').value;
+    if (!name || !price || !categoryId) return alert('Name, price and category are required.');
+
+    await addDoc(col('menuItems'), {
+      name,
+      description: document.getElementById('itDesc').value.trim(),
+      price,
+      categoryId,
+      image: document.getElementById('itImage').value.trim(),
+      popular: document.getElementById('itPopular').checked,
+      sortOrder: Number(document.getElementById('itSort').value) || 0,
+      sizes: parseOptionLines(document.getElementById('itSizes').value, 'extra', 'sz'),
+      addons: parseOptionLines(document.getElementById('itAddons').value, 'price', 'ad'),
+      active: true
+    });
+
+    document.getElementById('itName').value = '';
+    document.getElementById('itDesc').value = '';
+    document.getElementById('itPrice').value = '';
+    document.getElementById('itImage').value = '';
+    document.getElementById('itSizes').value = '';
+    document.getElementById('itAddons').value = '';
+    document.getElementById('itPopular').checked = false;
+    await loadItems();
+  };
+
+  window.deleteItem = async function deleteItem(id) {
+    if (!confirm('Delete this item?')) return;
+    await deleteDoc(docRef(`menuItems/${id}`));
+    await loadItems();
+  };
+
+  // ---------- Offers ----------
+  async function loadOffers() {
+    const snap = await getDocs(query(col('offers'), orderBy('sortOrder', 'asc')));
+    const offers = [];
+    snap.forEach(d => offers.push({ id: d.id, ...d.data() }));
+
+    document.getElementById('offerListAdmin').innerHTML = offers.map(o => `
+      <div class="list-row">
+        <div class="list-main">
+          <div class="list-title">${o.title}</div>
+          <div class="list-sub">${o.subtitle || ''} · ${o.color}</div>
+        </div>
+        <div class="list-actions">
+          <button class="btn btn-sm btn-danger" onclick="deleteOffer('${o.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('') || '<p class="muted">No offers yet.</p>';
+  }
+
+  window.addOffer = async function addOffer() {
+    const title = document.getElementById('ofTitle').value.trim();
+    if (!title) return alert('Title is required.');
+    await addDoc(col('offers'), {
+      title,
+      subtitle: document.getElementById('ofSub').value.trim(),
+      color: document.getElementById('ofColor').value,
+      sortOrder: Number(document.getElementById('ofSort').value) || 0,
+      active: true
+    });
+    document.getElementById('ofTitle').value = '';
+    document.getElementById('ofSub').value = '';
+    await loadOffers();
+  };
+
+  window.deleteOffer = async function deleteOffer(id) {
+    if (!confirm('Delete this offer?')) return;
+    await deleteDoc(docRef(`offers/${id}`));
+    await loadOffers();
+  };
+
+  // ---------- Orders (live) ----------
+  function watchOrders() {
+    const q = query(col('orders'), orderBy('createdAt', 'desc'));
+    onSnapshot(q, (snap) => {
+      const rows = [];
+      snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+
+      document.getElementById('ordersEmpty').hidden = rows.length > 0;
+      document.getElementById('orderList').innerHTML = rows.map(o => {
+        const when = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : '';
+        const itemsLine = (o.items || []).map(c => `${c.qty}× ${c.name}`).join(', ');
+        return `
+          <div class="list-row">
+            <div class="list-main">
+              <div class="list-title">${o.currency || ''}${o.total ?? ''} <span class="badge ${o.status}">${(o.status || 'new').replace(/-/g,' ')}</span></div>
+              <div class="list-sub">${itemsLine}</div>
+              <div class="list-sub">${when}</div>
+            </div>
+            <div class="list-actions">
+              <select onchange="updateOrderStatus('${o.id}', this.value)" style="width:auto;margin:0;">
+                ${['new','preparing','out-for-delivery','completed','cancelled'].map(s =>
+                  `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.replace(/-/g,' ')}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>`;
+      }).join('');
+    }, (err) => console.warn('[Grill&Go admin] orders listener error', err));
+  }
+
+  window.updateOrderStatus = async function updateOrderStatus(id, status) {
+    await updateDoc(docRef(`orders/${id}`), { status });
+  };
+
+  // ---------- Settings ----------
+  async function loadSettingsIntoForm() {
+    document.getElementById('stName').value = RESTAURANT_CONFIG.name || '';
+    document.getElementById('stTagline').value = RESTAURANT_CONFIG.tagline || '';
+    document.getElementById('stCurrency').value = RESTAURANT_CONFIG.currencySymbol || '';
+    document.getElementById('stWhatsapp').value = RESTAURANT_CONFIG.whatsapp || '';
+  }
+
+  window.saveSettings = async function saveSettings() {
+    const data = {
+      name: document.getElementById('stName').value.trim(),
+      tagline: document.getElementById('stTagline').value.trim(),
+      currencySymbol: document.getElementById('stCurrency').value.trim(),
+      whatsapp: document.getElementById('stWhatsapp').value.trim()
+    };
+    await setDoc(docRef('settings/general'), data, { merge: true });
+    Object.assign(RESTAURANT_CONFIG, data);
+    document.getElementById('settingsSaved').hidden = false;
+    setTimeout(() => document.getElementById('settingsSaved').hidden = true, 2000);
+  };
+
+  // ---------- One-time demo data import ----------
+  window.importDemoData = async function importDemoData() {
+    if (typeof MENU_CATEGORIES === 'undefined' || typeof MENU_ITEMS === 'undefined') {
+      return alert('js/menu-data.js did not load — cannot import.');
+    }
+    const existing = await getDocs(col('categories'));
+    if (!existing.empty && !confirm(`Firestore already has ${existing.size} categor${existing.size === 1 ? 'y' : 'ies'}. Import demo data anyway? This will add duplicates, not replace.`)) {
+      return;
+    }
+
+    const batch = writeBatch(window.rgDb);
+    MENU_CATEGORIES.forEach((c, i) => {
+      const ref = doc(col('categories'));
+      batch.set(ref, { name: c.name, icon: c.icon, sortOrder: i, active: true });
+    });
+    (typeof MENU_OFFERS !== 'undefined' ? MENU_OFFERS : []).forEach((o, i) => {
+      const ref = doc(col('offers'));
+      batch.set(ref, { title: o.title, subtitle: o.subtitle, color: o.color, sortOrder: i, active: true });
+    });
+    await batch.commit();
+
+    // Items reference categoryId by the ORIGINAL static id (e.g. "burgers"), which
+    // won't match the new Firestore-generated category ids. Re-fetch categories,
+    // match by name, and remap before writing items.
+    const catSnap = await getDocs(col('categories'));
+    const nameToNewId = {};
+    catSnap.forEach(d => { nameToNewId[d.data().name] = d.id; });
+    const oldIdToName = {};
+    MENU_CATEGORIES.forEach(c => { oldIdToName[c.id] = c.name; });
+
+    const itemBatch = writeBatch(window.rgDb);
+    MENU_ITEMS.forEach((it, i) => {
+      const newCatId = nameToNewId[oldIdToName[it.categoryId]] || null;
+      const ref = doc(col('menuItems'));
+      itemBatch.set(ref, {
+        name: it.name,
+        description: it.description || '',
+        price: it.price,
+        categoryId: newCatId,
+        image: it.image || '',
+        popular: !!it.popular,
+        sortOrder: i,
+        active: true
+      });
+    });
+    await itemBatch.commit();
+
+    alert('Demo data imported. Reloading lists...');
+    await loadCategories();
+    await loadItems();
+    await loadOffers();
+  };
+</script>
+</body>
+</html>

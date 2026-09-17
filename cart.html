@@ -33,7 +33,11 @@
 <script src="js/config.js"></script>
 <script src="js/menu-data.js"></script>
 <script src="js/app.js"></script>
-<script>
+<!-- Phase 3: overlays live Firestore settings (e.g. WhatsApp number) onto config, and lets checkout() save the order -->
+<script type="module" src="js/firebase-init.js"></script>
+<script type="module">
+  await window.rgReady;
+
   const cur = RESTAURANT_CONFIG.currencySymbol;
 
   function render() {
@@ -73,23 +77,44 @@
         <div class="summary-row"><span>Delivery</span><span>Calculated at checkout</span></div>
         <div class="summary-row total"><span>Total</span><span>${cur}${total}</span></div>
       </div>
-      <button class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+      <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">Proceed to Checkout</button>
     `;
   }
 
-  function removeItem(i) {
+  // This script is now type="module" (needed for top-level `await` above),
+  // so top-level functions are module-scoped, not automatically on window.
+  // The rendered markup calls removeItem(...) / checkout() via inline onclick,
+  // so both must be attached to window explicitly.
+  window.removeItem = function removeItem(i) {
     removeFromCart(i);
     render();
-  }
+  };
 
-  function checkout() {
-    // Phase 1: WhatsApp handoff. Phase 3 replaces this with Firestore order write.
+  window.checkout = async function checkout() {
     const cart = getCart();
+    if (!cart.length) return;
+
+    const btn = document.getElementById('checkoutBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
+
     const lines = cart.map(c => `${c.qty}x ${c.name}${c.sizeName ? ' (' + c.sizeName + ')' : ''}`);
     const total = cart.reduce((s, c) => s + c.lineTotal, 0);
+
+    // Phase 3: save the order to Firestore so it shows up in the admin panel.
+    // Best-effort — if this fails (offline, Firebase not set up yet), checkout
+    // still proceeds over WhatsApp exactly like Phase 1/2 did.
+    await window.rgWriteOrder({
+      items: cart,
+      total,
+      currency: cur,
+      restaurantName: RESTAURANT_CONFIG.name
+    });
+
     const msg = encodeURIComponent(`New order from ${RESTAURANT_CONFIG.name}:\n${lines.join('\n')}\n\nTotal: ${cur}${total}`);
     window.open(`https://wa.me/${RESTAURANT_CONFIG.whatsapp}?text=${msg}`, '_blank');
-  }
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Checkout'; }
+  };
 
   render();
 </script>
