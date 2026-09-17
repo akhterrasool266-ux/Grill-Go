@@ -1,4 +1,3 @@
-
 // ============================================================
 // RESTAURANT CONFIG
 // Har naye client ke liye SIRF ye file badalni hai.
