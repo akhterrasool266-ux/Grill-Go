@@ -78,14 +78,19 @@
     <!-- Signed out -->
     <div class="card center" id="viewSignedOut" hidden>
       <h1>Sign in</h1>
-      <p class="muted">Sign in with the Google account you registered as an admin.</p>
-      <button class="btn btn-primary" onclick="rgSignIn().catch(e => alert('Sign-in failed: ' + e.message))">Continue with Google</button>
+      <p class="muted">Sign in with your admin email and password.</p>
+      <div style="text-align:left;">
+        <label>Email</label><input id="loginEmail" type="email" placeholder="owner@example.com">
+        <label>Password</label><input id="loginPassword" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" onclick="doEmailSignIn()">Sign in</button>
+      <p class="muted" id="loginError" style="color:#C0392B;" hidden></p>
     </div>
 
     <!-- Signed in, not an admin -->
     <div class="card" id="viewNotAdmin" hidden>
       <h1>Access not granted</h1>
-      <p class="muted">This Google account isn't set up as an admin for this restaurant yet. Give this UID to whoever manages Firebase and ask them to add it to <code>restaurants/{restaurantId}/admins</code>:</p>
+      <p class="muted">This account isn't set up as an admin for this restaurant yet. Give this UID to whoever manages Firebase and ask them to add it to <code>restaurants/{restaurantId}/admins</code>:</p>
       <div class="code-box" id="myUid"></div>
       <hr class="divider">
       <button class="btn" onclick="rgSignOut()">Sign out</button>
@@ -210,6 +215,9 @@
     collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc,
     onSnapshot, query, orderBy, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    signInWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   await window.rgReady;
 
@@ -245,6 +253,24 @@
   }
 
   // ---------- Tabs ----------
+  window.doEmailSignIn = async function doEmailSignIn() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.hidden = true;
+    if (!email || !password) {
+      errEl.textContent = 'Email aur password dono required hain.';
+      errEl.hidden = false;
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(window.rgAuth, email, password);
+    } catch (e) {
+      errEl.textContent = 'Sign-in failed: ' + e.message;
+      errEl.hidden = false;
+    }
+  };
+
   window.switchTab = function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('hidden', p.id !== `tab-${name}`));
