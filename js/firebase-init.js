@@ -1,4 +1,4 @@
-// js/firebase-init.js — Phase 3
+      // js/firebase-init.js — Phase 3
 //
 // Loaded as a <script type="module">. Does NOT replace config.js / menu-data.js /
 // app.js — it overlays live Firestore data onto the existing MENU_CATEGORIES /
@@ -28,7 +28,7 @@ window.rgSignIn = () => Promise.reject(new Error('Firebase not configured'));
 window.rgSignOut = () => Promise.resolve();
 window.rgOnAuth = (cb) => cb(null);
 
-const restaurantId = (window.RESTAURANT_CONFIG && RESTAURANT_CONFIG.restaurantId) || 'default';
+const restaurantId = (typeof RESTAURANT_CONFIG !== 'undefined' && RESTAURANT_CONFIG.restaurantId) || 'default';
 window.RG_RESTAURANT_ID = restaurantId;
 
 try {
