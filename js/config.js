@@ -44,5 +44,13 @@ const RESTAURANT_CONFIG = {
     storageBucket: "grill-n-go.firebasestorage.app",
     messagingSenderId: "583403142699",
     appId: "1:583403142699:web:9e75cec8c7cd9fc265b46e"
+  },
+
+  // Cloudinary — used for menu photo uploads from the admin panel
+  // (Firebase Storage needs the paid Blaze plan, so this replaces it)
+  cloudinary: {
+    cloudName: "eudsyqzg",
+    uploadPreset: "Grill N go"
   }
 };
+  
