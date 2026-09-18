@@ -131,7 +131,8 @@
             <div><label>Emoji icon</label><input id="catIcon" placeholder="🍔"></div>
             <div><label>Sort order</label><input id="catSort" type="number" value="0"></div>
           </div>
-          <button class="btn btn-primary" onclick="addCategory()">Add category</button>
+          <button class="btn btn-primary" id="catSaveBtn" onclick="saveCategory()">Add category</button>
+          <button class="btn btn-sm" id="catCancelBtn" onclick="cancelCategoryEdit()" hidden>Cancel edit</button>
         </div>
 
         <div class="card">
@@ -158,7 +159,8 @@
               <input type="checkbox" id="itPopular" style="width:auto;margin:0;"> <label style="margin:0;">Mark as popular</label>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="addItem()">Add item</button>
+          <button class="btn btn-primary" id="itSaveBtn" onclick="saveItem()">Add item</button>
+          <button class="btn btn-sm" id="itCancelBtn" onclick="cancelItemEdit()" hidden>Cancel edit</button>
         </div>
       </div>
 
@@ -180,7 +182,8 @@
             </div>
             <div><label>Sort order</label><input id="ofSort" type="number" value="0"></div>
           </div>
-          <button class="btn btn-primary" onclick="addOffer()">Add offer</button>
+          <button class="btn btn-primary" id="ofSaveBtn" onclick="saveOffer()">Add offer</button>
+          <button class="btn btn-sm" id="ofCancelBtn" onclick="cancelOfferEdit()" hidden>Cancel edit</button>
         </div>
       </div>
 
@@ -293,6 +296,11 @@
 
   let dashInitDone = false;
   let categoriesCache = [];
+  let itemsCache = [];
+  let offersCache = [];
+  let editingCategoryId = null;
+  let editingItemId = null;
+  let editingOfferId = null;
 
   async function initDashboard() {
     if (dashInitDone) return;
@@ -317,6 +325,7 @@
           <div class="list-sub">sort ${c.sortOrder ?? 0}</div>
         </div>
         <div class="list-actions">
+          <button class="btn btn-sm" onclick="editCategory('${c.id}')">Edit</button>
           <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c.id}')">Delete</button>
         </div>
       </div>
@@ -325,33 +334,58 @@
     document.getElementById('itCat').innerHTML = categoriesCache.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   }
 
-  window.addCategory = async function addCategory() {
-    const name = document.getElementById('catName').value.trim();
-    if (!name) return alert('Name is required.');
-    await addDoc(col('categories'), {
-      name,
-      icon: document.getElementById('catIcon').value.trim() || '🍽️',
-      sortOrder: Number(document.getElementById('catSort').value) || 0,
-      active: true
-    });
+  window.editCategory = function editCategory(id) {
+    const c = categoriesCache.find(x => x.id === id);
+    if (!c) return;
+    editingCategoryId = id;
+    document.getElementById('catName').value = c.name || '';
+    document.getElementById('catIcon').value = c.icon || '';
+    document.getElementById('catSort').value = c.sortOrder ?? 0;
+    document.getElementById('catSaveBtn').textContent = 'Update category';
+    document.getElementById('catCancelBtn').hidden = false;
+    document.getElementById('catName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  window.cancelCategoryEdit = function cancelCategoryEdit() {
+    editingCategoryId = null;
     document.getElementById('catName').value = '';
     document.getElementById('catIcon').value = '';
+    document.getElementById('catSort').value = 0;
+    document.getElementById('catSaveBtn').textContent = 'Add category';
+    document.getElementById('catCancelBtn').hidden = true;
+  };
+
+  window.saveCategory = async function saveCategory() {
+    const name = document.getElementById('catName').value.trim();
+    if (!name) return alert('Name is required.');
+    const data = {
+      name,
+      icon: document.getElementById('catIcon').value.trim() || '🍽️',
+      sortOrder: Number(document.getElementById('catSort').value) || 0
+    };
+    if (editingCategoryId) {
+      await updateDoc(docRef(`categories/${editingCategoryId}`), data);
+    } else {
+      await addDoc(col('categories'), { ...data, active: true });
+    }
+    window.cancelCategoryEdit();
     await loadCategories();
   };
 
   window.deleteCategory = async function deleteCategory(id) {
     if (!confirm('Delete this category? Items in it will remain but show under no category until reassigned.')) return;
     await deleteDoc(docRef(`categories/${id}`));
+    if (editingCategoryId === id) window.cancelCategoryEdit();
     await loadCategories();
   };
 
   // ---------- Items ----------
   async function loadItems() {
     const snap = await getDocs(query(col('menuItems'), orderBy('sortOrder', 'asc')));
-    const items = [];
-    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+    itemsCache = [];
+    snap.forEach(d => itemsCache.push({ id: d.id, ...d.data() }));
 
-    document.getElementById('itemList').innerHTML = items.map(it => {
+    document.getElementById('itemList').innerHTML = itemsCache.map(it => {
       const catName = categoriesCache.find(c => c.id === it.categoryId)?.name || '—';
       return `
         <div class="list-row">
@@ -360,6 +394,7 @@
             <div class="list-sub">${catName} · ${RESTAURANT_CONFIG.currencySymbol}${it.price}${(it.sizes||[]).length ? ` · ${it.sizes.length} size(s)` : ''}${(it.addons||[]).length ? ` · ${it.addons.length} addon(s)` : ''}</div>
           </div>
           <div class="list-actions">
+            <button class="btn btn-sm" onclick="editItem('${it.id}')">Edit</button>
             <button class="btn btn-sm btn-danger" onclick="deleteItem('${it.id}')">Delete</button>
           </div>
         </div>`;
@@ -374,50 +409,46 @@
     });
   }
 
+  // Reverse of parseOptionLines, for prefilling the edit form.
+  function formatOptionLines(arr, valueKey) {
+    return (arr || []).map(o => `${o.name} | ${o[valueKey] ?? 0}`).join('\n');
+  }
+
   document.getElementById('itImageFile').addEventListener('change', (e) => {
     const file = e.target.files[0];
     const preview = document.getElementById('itImagePreview');
     if (file) {
       preview.src = URL.createObjectURL(file);
       preview.style.display = 'block';
-    } else {
+    } else if (!document.getElementById('itImage').value) {
       preview.style.display = 'none';
     }
   });
 
-  window.addItem = async function addItem() {
-    const name = document.getElementById('itName').value.trim();
-    const price = Number(document.getElementById('itPrice').value);
-    const categoryId = document.getElementById('itCat').value;
-    if (!name || !price || !categoryId) return alert('Name, price and category are required.');
+  window.editItem = function editItem(id) {
+    const it = itemsCache.find(x => x.id === id);
+    if (!it) return;
+    editingItemId = id;
+    document.getElementById('itName').value = it.name || '';
+    document.getElementById('itDesc').value = it.description || '';
+    document.getElementById('itPrice').value = it.price ?? '';
+    document.getElementById('itCat').value = it.categoryId || '';
+    document.getElementById('itImage').value = it.image || '';
+    document.getElementById('itImageFile').value = '';
+    const preview = document.getElementById('itImagePreview');
+    if (it.image) { preview.src = it.image; preview.style.display = 'block'; }
+    else { preview.style.display = 'none'; }
+    document.getElementById('itSizes').value = formatOptionLines(it.sizes, 'extra');
+    document.getElementById('itAddons').value = formatOptionLines(it.addons, 'price');
+    document.getElementById('itSort').value = it.sortOrder ?? 0;
+    document.getElementById('itPopular').checked = !!it.popular;
+    document.getElementById('itSaveBtn').textContent = 'Update item';
+    document.getElementById('itCancelBtn').hidden = false;
+    document.getElementById('itName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
-    const addBtn = document.querySelector('button[onclick="addItem()"]');
-    const file = document.getElementById('itImageFile').files[0];
-    let imageUrl = document.getElementById('itImage').value.trim();
-
-    if (file) {
-      if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Uploading photo...'; }
-      try {
-        imageUrl = await window.rgUploadImage(file);
-      } catch (e) {
-        if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add item'; }
-        return alert('Photo upload failed: ' + e.message);
-      }
-    }
-
-    await addDoc(col('menuItems'), {
-      name,
-      description: document.getElementById('itDesc').value.trim(),
-      price,
-      categoryId,
-      image: imageUrl,
-      popular: document.getElementById('itPopular').checked,
-      sortOrder: Number(document.getElementById('itSort').value) || 0,
-      sizes: parseOptionLines(document.getElementById('itSizes').value, 'extra', 'sz'),
-      addons: parseOptionLines(document.getElementById('itAddons').value, 'price', 'ad'),
-      active: true
-    });
-
+  window.cancelItemEdit = function cancelItemEdit() {
+    editingItemId = null;
     document.getElementById('itName').value = '';
     document.getElementById('itDesc').value = '';
     document.getElementById('itPrice').value = '';
@@ -426,54 +457,131 @@
     document.getElementById('itImagePreview').style.display = 'none';
     document.getElementById('itSizes').value = '';
     document.getElementById('itAddons').value = '';
+    document.getElementById('itSort').value = 0;
     document.getElementById('itPopular').checked = false;
-    if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add item'; }
+    document.getElementById('itSaveBtn').textContent = 'Add item';
+    document.getElementById('itCancelBtn').hidden = true;
+  };
+
+  window.saveItem = async function saveItem() {
+    const name = document.getElementById('itName').value.trim();
+    const price = Number(document.getElementById('itPrice').value);
+    const categoryId = document.getElementById('itCat').value;
+    if (!name || !price || !categoryId) return alert('Name, price and category are required.');
+
+    const saveBtn = document.getElementById('itSaveBtn');
+    const file = document.getElementById('itImageFile').files[0];
+    let imageUrl = document.getElementById('itImage').value.trim();
+    const wasEditing = !!editingItemId;
+    const doneLabel = wasEditing ? 'Update item' : 'Add item';
+
+    if (file) {
+      saveBtn.disabled = true; saveBtn.textContent = 'Uploading photo...';
+      try {
+        imageUrl = await window.rgUploadImage(file);
+      } catch (e) {
+        saveBtn.disabled = false; saveBtn.textContent = doneLabel;
+        return alert('Photo upload failed: ' + e.message);
+      }
+    }
+
+    saveBtn.disabled = true; saveBtn.textContent = wasEditing ? 'Updating item...' : 'Adding item...';
+
+    const data = {
+      name,
+      description: document.getElementById('itDesc').value.trim(),
+      price,
+      categoryId,
+      image: imageUrl,
+      popular: document.getElementById('itPopular').checked,
+      sortOrder: Number(document.getElementById('itSort').value) || 0,
+      sizes: parseOptionLines(document.getElementById('itSizes').value, 'extra', 'sz'),
+      addons: parseOptionLines(document.getElementById('itAddons').value, 'price', 'ad')
+    };
+
+    if (wasEditing) {
+      await updateDoc(docRef(`menuItems/${editingItemId}`), data);
+    } else {
+      await addDoc(col('menuItems'), { ...data, active: true });
+    }
+
+    saveBtn.disabled = false;
+    window.cancelItemEdit();
     await loadItems();
   };
 
   window.deleteItem = async function deleteItem(id) {
     if (!confirm('Delete this item?')) return;
     await deleteDoc(docRef(`menuItems/${id}`));
+    if (editingItemId === id) window.cancelItemEdit();
     await loadItems();
   };
 
   // ---------- Offers ----------
   async function loadOffers() {
     const snap = await getDocs(query(col('offers'), orderBy('sortOrder', 'asc')));
-    const offers = [];
-    snap.forEach(d => offers.push({ id: d.id, ...d.data() }));
+    offersCache = [];
+    snap.forEach(d => offersCache.push({ id: d.id, ...d.data() }));
 
-    document.getElementById('offerListAdmin').innerHTML = offers.map(o => `
+    document.getElementById('offerListAdmin').innerHTML = offersCache.map(o => `
       <div class="list-row">
         <div class="list-main">
           <div class="list-title">${o.title}</div>
           <div class="list-sub">${o.subtitle || ''} · ${o.color}</div>
         </div>
         <div class="list-actions">
+          <button class="btn btn-sm" onclick="editOffer('${o.id}')">Edit</button>
           <button class="btn btn-sm btn-danger" onclick="deleteOffer('${o.id}')">Delete</button>
         </div>
       </div>
     `).join('') || '<p class="muted">No offers yet.</p>';
   }
 
-  window.addOffer = async function addOffer() {
+  window.editOffer = function editOffer(id) {
+    const o = offersCache.find(x => x.id === id);
+    if (!o) return;
+    editingOfferId = id;
+    document.getElementById('ofTitle').value = o.title || '';
+    document.getElementById('ofSub').value = o.subtitle || '';
+    document.getElementById('ofColor').value = o.color || 'primary';
+    document.getElementById('ofSort').value = o.sortOrder ?? 0;
+    document.getElementById('ofSaveBtn').textContent = 'Update offer';
+    document.getElementById('ofCancelBtn').hidden = false;
+    document.getElementById('ofTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  window.cancelOfferEdit = function cancelOfferEdit() {
+    editingOfferId = null;
+    document.getElementById('ofTitle').value = '';
+    document.getElementById('ofSub').value = '';
+    document.getElementById('ofColor').value = 'primary';
+    document.getElementById('ofSort').value = 0;
+    document.getElementById('ofSaveBtn').textContent = 'Add offer';
+    document.getElementById('ofCancelBtn').hidden = true;
+  };
+
+  window.saveOffer = async function saveOffer() {
     const title = document.getElementById('ofTitle').value.trim();
     if (!title) return alert('Title is required.');
-    await addDoc(col('offers'), {
+    const data = {
       title,
       subtitle: document.getElementById('ofSub').value.trim(),
       color: document.getElementById('ofColor').value,
-      sortOrder: Number(document.getElementById('ofSort').value) || 0,
-      active: true
-    });
-    document.getElementById('ofTitle').value = '';
-    document.getElementById('ofSub').value = '';
+      sortOrder: Number(document.getElementById('ofSort').value) || 0
+    };
+    if (editingOfferId) {
+      await updateDoc(docRef(`offers/${editingOfferId}`), data);
+    } else {
+      await addDoc(col('offers'), { ...data, active: true });
+    }
+    window.cancelOfferEdit();
     await loadOffers();
   };
 
   window.deleteOffer = async function deleteOffer(id) {
     if (!confirm('Delete this offer?')) return;
     await deleteDoc(docRef(`offers/${id}`));
+    if (editingOfferId === id) window.cancelOfferEdit();
     await loadOffers();
   };
 
