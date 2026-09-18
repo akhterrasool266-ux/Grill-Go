@@ -1,4 +1,4 @@
-      // js/firebase-init.js — Phase 3
+// js/firebase-init.js — Phase 3
 //
 // Loaded as a <script type="module">. Does NOT replace config.js / menu-data.js /
 // app.js — it overlays live Firestore data onto the existing MENU_CATEGORIES /
@@ -43,6 +43,29 @@ try {
 } catch (e) {
   console.warn('[Grill&Go] Firebase not configured yet — running on static menu-data.js', e);
 }
+
+// Uploads a File (from <input type="file">) to Cloudinary via an UNSIGNED
+// upload preset (no backend/API-secret needed — safe to call from the
+// browser) and returns its public HTTPS URL. Requires
+// RESTAURANT_CONFIG.cloudinary = { cloudName, uploadPreset } to be set.
+// Throws on failure — callers should catch and show the error.
+window.rgUploadImage = async function rgUploadImage(file) {
+  const cfg = (typeof RESTAURANT_CONFIG !== 'undefined') && RESTAURANT_CONFIG.cloudinary;
+  if (!cfg || !cfg.cloudName || !cfg.uploadPreset) {
+    throw new Error('Cloudinary not configured — add RESTAURANT_CONFIG.cloudinary in config.js');
+  }
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', cfg.uploadPreset);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/image/upload`, {
+    method: 'POST',
+    body: form
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Cloudinary upload failed');
+  return data.secure_url;
+};
 
 function col(sub) {
   return collection(window.rgDb, `restaurants/${restaurantId}/${sub}`);
