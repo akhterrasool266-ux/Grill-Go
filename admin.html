@@ -144,7 +144,10 @@
             <div><label>Price</label><input id="itPrice" type="number" step="0.01" placeholder="0.00"></div>
             <div><label>Category</label><select id="itCat"></select></div>
           </div>
-          <label>Image URL (optional)</label><input id="itImage" placeholder="https://...">
+          <label>Photo (optional — upload from gallery)</label>
+          <input id="itImageFile" type="file" accept="image/*">
+          <img id="itImagePreview" style="display:none;max-width:120px;border-radius:8px;margin-bottom:10px;">
+          <input type="hidden" id="itImage" value="">
           <label>Sizes (optional — one per line: <code>Name | extra price</code>)</label>
           <textarea id="itSizes" rows="2" placeholder="Regular | 0&#10;Double Stack | 200"></textarea>
           <label>Addons (optional — one per line: <code>Name | price</code>)</label>
@@ -371,18 +374,43 @@
     });
   }
 
+  document.getElementById('itImageFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById('itImagePreview');
+    if (file) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    } else {
+      preview.style.display = 'none';
+    }
+  });
+
   window.addItem = async function addItem() {
     const name = document.getElementById('itName').value.trim();
     const price = Number(document.getElementById('itPrice').value);
     const categoryId = document.getElementById('itCat').value;
     if (!name || !price || !categoryId) return alert('Name, price and category are required.');
 
+    const addBtn = document.querySelector('button[onclick="addItem()"]');
+    const file = document.getElementById('itImageFile').files[0];
+    let imageUrl = document.getElementById('itImage').value.trim();
+
+    if (file) {
+      if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Uploading photo...'; }
+      try {
+        imageUrl = await window.rgUploadImage(file);
+      } catch (e) {
+        if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add item'; }
+        return alert('Photo upload failed: ' + e.message);
+      }
+    }
+
     await addDoc(col('menuItems'), {
       name,
       description: document.getElementById('itDesc').value.trim(),
       price,
       categoryId,
-      image: document.getElementById('itImage').value.trim(),
+      image: imageUrl,
       popular: document.getElementById('itPopular').checked,
       sortOrder: Number(document.getElementById('itSort').value) || 0,
       sizes: parseOptionLines(document.getElementById('itSizes').value, 'extra', 'sz'),
@@ -394,9 +422,12 @@
     document.getElementById('itDesc').value = '';
     document.getElementById('itPrice').value = '';
     document.getElementById('itImage').value = '';
+    document.getElementById('itImageFile').value = '';
+    document.getElementById('itImagePreview').style.display = 'none';
     document.getElementById('itSizes').value = '';
     document.getElementById('itAddons').value = '';
     document.getElementById('itPopular').checked = false;
+    if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add item'; }
     await loadItems();
   };
 
