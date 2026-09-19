@@ -16,6 +16,13 @@ function applyTheme() {
 applyTheme();
 window.applyTheme = applyTheme;
 
+// Emoji shown in an item card/modal when it has no uploaded photo yet —
+// falls back to its category's icon, then a generic plate.
+function itemImagePlaceholder(item) {
+  const cat = (typeof MENU_CATEGORIES !== 'undefined') && MENU_CATEGORIES.find(c => c.id === item.categoryId);
+  return (cat && cat.icon) || '🍽️';
+}
+
 // ---------- Cart storage ----------
 function getCart() {
   try {
@@ -106,7 +113,7 @@ function renderModal() {
 
   document.getElementById('modalBody').innerHTML = `
     <button class="modal-close" onclick="closeItemModal()">✕</button>
-    <div class="modal-img">${item.image ? `<img src="${item.image}">` : ''}</div>
+    <div class="modal-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
     <div class="modal-title">${item.name}</div>
     <div class="modal-desc">${item.description}</div>
     <div class="modal-price">${cur}${item.price}</div>
