@@ -101,7 +101,7 @@
   const popular = MENU_ITEMS.filter(i => i.popular);
   document.getElementById('popularList').innerHTML = popular.map(item => `
     <div class="item-card" onclick="openItemModal('${item.id}')">
-      <div class="item-img">${item.image ? `<img src="${item.image}">` : ''}</div>
+      <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
       <div class="item-info">
         <div class="item-name">${item.name}</div>
         <div class="item-desc">${item.description}</div>
