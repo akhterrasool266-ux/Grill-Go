@@ -14,6 +14,7 @@ function applyTheme() {
   root.setProperty('--accent', t.accent);
 }
 applyTheme();
+window.applyTheme = applyTheme;
 
 // ---------- Cart storage ----------
 function getCart() {

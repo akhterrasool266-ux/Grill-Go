@@ -152,6 +152,8 @@ window.rgLoadSettings = async function rgLoadSettings() {
     if (v.tagline) RESTAURANT_CONFIG.tagline = v.tagline;
     if (v.currencySymbol) RESTAURANT_CONFIG.currencySymbol = v.currencySymbol;
     if (v.whatsapp) RESTAURANT_CONFIG.whatsapp = v.whatsapp;
+    if (v.theme) Object.assign(RESTAURANT_CONFIG.theme, v.theme);
+    if (typeof window.applyTheme === 'function') window.applyTheme();
     return true;
   } catch (e) {
     console.warn('[Grill&Go] Firestore settings load failed', e);
