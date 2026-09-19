@@ -646,7 +646,11 @@
 
   window.deleteOrder = async function deleteOrder(id) {
     if (!confirm('Delete this order? This cannot be undone.')) return;
-    await deleteDoc(docRef(`orders/${id}`));
+    try {
+      await deleteDoc(docRef(`orders/${id}`));
+    } catch (e) {
+      alert('Could not delete order: ' + (e.code || e.message) + '\n\nThis is usually a Firestore security rules issue — the "orders" collection needs to allow delete for signed-in admins.');
+    }
   };
 
   // ---------- Settings ----------

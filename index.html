@@ -98,8 +98,11 @@
   `).join('');
 
   const cur = RESTAURANT_CONFIG.currencySymbol;
+  // Falls back to showing every menu item when none are flagged "popular"
+  // yet, so newly added admin products aren't hidden from the home page.
   const popular = MENU_ITEMS.filter(i => i.popular);
-  document.getElementById('popularList').innerHTML = popular.map(item => `
+  const popularToShow = popular.length ? popular : MENU_ITEMS;
+  document.getElementById('popularList').innerHTML = popularToShow.map(item => `
     <div class="item-card" onclick="openItemModal('${item.id}')">
       <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
       <div class="item-info">
