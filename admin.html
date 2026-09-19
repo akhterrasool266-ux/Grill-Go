@@ -209,6 +209,23 @@
           <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
           <p class="muted" id="settingsSaved" hidden style="color:var(--green);font-weight:700;">Saved ✓</p>
         </div>
+
+        <div class="card">
+          <h2>Theme colors</h2>
+          <p class="muted">These colors control the branding across the customer-facing site (menu, cart, offers).</p>
+          <div class="row">
+            <div><label>Primary</label><input id="thPrimary" type="color"></div>
+            <div><label>Primary (dark)</label><input id="thPrimaryDark" type="color"></div>
+          </div>
+          <div class="row">
+            <div><label>Dark (text/header)</label><input id="thDark" type="color"></div>
+            <div><label>Light background (cream)</label><input id="thCream" type="color"></div>
+          </div>
+          <label>Accent</label><input id="thAccent" type="color">
+          <button class="btn btn-green" onclick="applyThemeSettings()">Apply theme</button>
+          <button class="btn btn-sm" onclick="resetThemeToLight()">Reset to default light theme</button>
+          <p class="muted" id="themeApplied" hidden style="color:var(--green);font-weight:700;">Theme applied ✓</p>
+        </div>
       </div>
     </div>
 
@@ -609,6 +626,7 @@
                   `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.replace(/-/g,' ')}</option>`
                 ).join('')}
               </select>
+              <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')">Delete</button>
             </div>
           </div>`;
       }).join('');
@@ -619,12 +637,35 @@
     await updateDoc(docRef(`orders/${id}`), { status });
   };
 
+  window.deleteOrder = async function deleteOrder(id) {
+    if (!confirm('Delete this order? This cannot be undone.')) return;
+    await deleteDoc(docRef(`orders/${id}`));
+  };
+
   // ---------- Settings ----------
+  const DEFAULT_LIGHT_THEME = {
+    primary: "#E8531C",
+    primaryDark: "#B93E10",
+    dark: "#1B1B1B",
+    cream: "#FFF8F0",
+    accent: "#2D9C5A"
+  };
+
+  function loadThemeIntoForm(theme) {
+    const t = { ...DEFAULT_LIGHT_THEME, ...(theme || {}) };
+    document.getElementById('thPrimary').value = t.primary;
+    document.getElementById('thPrimaryDark').value = t.primaryDark;
+    document.getElementById('thDark').value = t.dark;
+    document.getElementById('thCream').value = t.cream;
+    document.getElementById('thAccent').value = t.accent;
+  }
+
   async function loadSettingsIntoForm() {
     document.getElementById('stName').value = RESTAURANT_CONFIG.name || '';
     document.getElementById('stTagline').value = RESTAURANT_CONFIG.tagline || '';
     document.getElementById('stCurrency').value = RESTAURANT_CONFIG.currencySymbol || '';
     document.getElementById('stWhatsapp').value = RESTAURANT_CONFIG.whatsapp || '';
+    loadThemeIntoForm(RESTAURANT_CONFIG.theme);
   }
 
   window.saveSettings = async function saveSettings() {
@@ -638,6 +679,25 @@
     Object.assign(RESTAURANT_CONFIG, data);
     document.getElementById('settingsSaved').hidden = false;
     setTimeout(() => document.getElementById('settingsSaved').hidden = true, 2000);
+  };
+
+  window.applyThemeSettings = async function applyThemeSettings() {
+    const theme = {
+      primary: document.getElementById('thPrimary').value,
+      primaryDark: document.getElementById('thPrimaryDark').value,
+      dark: document.getElementById('thDark').value,
+      cream: document.getElementById('thCream').value,
+      accent: document.getElementById('thAccent').value
+    };
+    await setDoc(docRef('settings/general'), { theme }, { merge: true });
+    Object.assign(RESTAURANT_CONFIG.theme, theme);
+    document.getElementById('themeApplied').hidden = false;
+    setTimeout(() => document.getElementById('themeApplied').hidden = true, 2000);
+  };
+
+  window.resetThemeToLight = function resetThemeToLight() {
+    loadThemeIntoForm(DEFAULT_LIGHT_THEME);
+    applyThemeSettings();
   };
 
   // ---------- One-time demo data import ----------
