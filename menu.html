@@ -46,8 +46,6 @@
 <!-- Phase 3: overlays live Firestore menu/settings onto the globals above, if configured -->
 <script type="module" src="js/firebase-init.js?v=3"></script>
 <script type="module">
-  await window.rgReady;
-
   document.getElementById('brandMark').textContent = RESTAURANT_CONFIG.name;
   const cur = RESTAURANT_CONFIG.currencySymbol;
 
@@ -116,8 +114,18 @@
     `).join('');
   }
 
-  renderCats();
-  renderItems();
+  function renderPage() {
+    renderCats();
+    renderItems();
+  }
+
+  // Re-render if the live Firestore menu finishes loading after our initial
+  // paint (e.g. rgReady hit its timeout on a slow connection) — otherwise
+  // the page would be stuck showing the static demo data indefinitely.
+  window.onMenuLoaded = renderPage;
+
+  await window.rgReady;
+  renderPage();
 </script>
 </body>
 </html>

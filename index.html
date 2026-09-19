@@ -67,54 +67,62 @@
 <!-- Phase 3: overlays live Firestore menu/settings onto the globals above, if configured -->
 <script type="module" src="js/firebase-init.js?v=3"></script>
 <script type="module">
-  await window.rgReady;
+  function renderHome() {
+    document.getElementById('brandMark').textContent = RESTAURANT_CONFIG.name;
+    document.getElementById('brandTagline').textContent = RESTAURANT_CONFIG.tagline;
 
-  document.getElementById('brandMark').textContent = RESTAURANT_CONFIG.name;
-  document.getElementById('brandTagline').textContent = RESTAURANT_CONFIG.tagline;
-
-  document.getElementById('offerScroll').innerHTML = MENU_OFFERS.map(o => `
-    <div class="offer-card ${o.color}">
-      <div class="offer-title">${o.title}</div>
-      <div class="offer-sub">${o.subtitle}</div>
-      <a href="offers.html" class="offer-btn">Order Now</a>
-    </div>
-  `).join('');
-
-  // Dedupe by name so a duplicate category doc (e.g. demo data imported
-  // twice) doesn't show the same category chip more than once on the home page.
-  const seenCatNames = new Set();
-  const uniqueHomeCats = MENU_CATEGORIES.filter(c => {
-    if (seenCatNames.has(c.name)) return false;
-    seenCatNames.add(c.name);
-    return true;
-  });
-  document.getElementById('catScroll').innerHTML = uniqueHomeCats.map(c => `
-    <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
-      <div class="cat-chip">
-        <div class="cat-emoji">${c.icon}</div>
-        <div class="cat-name">${c.name}</div>
+    document.getElementById('offerScroll').innerHTML = MENU_OFFERS.map(o => `
+      <div class="offer-card ${o.color}">
+        <div class="offer-title">${o.title}</div>
+        <div class="offer-sub">${o.subtitle}</div>
+        <a href="offers.html" class="offer-btn">Order Now</a>
       </div>
-    </a>
-  `).join('');
+    `).join('');
 
-  const cur = RESTAURANT_CONFIG.currencySymbol;
-  // Falls back to showing every menu item when none are flagged "popular"
-  // yet, so newly added admin products aren't hidden from the home page.
-  const popular = MENU_ITEMS.filter(i => i.popular);
-  const popularToShow = popular.length ? popular : MENU_ITEMS;
-  document.getElementById('popularList').innerHTML = popularToShow.map(item => `
-    <div class="item-card" onclick="openItemModal('${item.id}')">
-      <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
-      <div class="item-info">
-        <div class="item-name">${item.name}</div>
-        <div class="item-desc">${item.description}</div>
-        <div class="item-bottom">
-          <div class="item-price">${cur}${item.price}</div>
-          <button class="add-btn" onclick="event.stopPropagation(); openItemModal('${item.id}')">Add</button>
+    // Dedupe by name so a duplicate category doc (e.g. demo data imported
+    // twice) doesn't show the same category chip more than once on the home page.
+    const seenCatNames = new Set();
+    const uniqueHomeCats = MENU_CATEGORIES.filter(c => {
+      if (seenCatNames.has(c.name)) return false;
+      seenCatNames.add(c.name);
+      return true;
+    });
+    document.getElementById('catScroll').innerHTML = uniqueHomeCats.map(c => `
+      <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
+        <div class="cat-chip">
+          <div class="cat-emoji">${c.icon}</div>
+          <div class="cat-name">${c.name}</div>
+        </div>
+      </a>
+    `).join('');
+
+    const cur = RESTAURANT_CONFIG.currencySymbol;
+    // Falls back to showing every menu item when none are flagged "popular"
+    // yet, so newly added admin products aren't hidden from the home page.
+    const popular = MENU_ITEMS.filter(i => i.popular);
+    const popularToShow = popular.length ? popular : MENU_ITEMS;
+    document.getElementById('popularList').innerHTML = popularToShow.map(item => `
+      <div class="item-card" onclick="openItemModal('${item.id}')">
+        <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
+        <div class="item-info">
+          <div class="item-name">${item.name}</div>
+          <div class="item-desc">${item.description}</div>
+          <div class="item-bottom">
+            <div class="item-price">${cur}${item.price}</div>
+            <button class="add-btn" onclick="event.stopPropagation(); openItemModal('${item.id}')">Add</button>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+  }
+
+  // Re-render if the live Firestore menu finishes loading after our initial
+  // paint (e.g. rgReady hit its timeout on a slow connection) — otherwise
+  // the page would be stuck showing the static demo data indefinitely.
+  window.onMenuLoaded = renderHome;
+
+  await window.rgReady;
+  renderHome();
 </script>
 </body>
 </html>
