@@ -133,6 +133,10 @@ window.rgLoadMenu = async function rgLoadMenu() {
       MENU_OFFERS.length = 0;
       MENU_OFFERS.push(...offers);
     }
+    // Pages register this to re-render if the live menu arrives after their
+    // initial paint (e.g. a slow connection that missed the rgReady timeout
+    // below) — without it they'd be stuck showing the static demo data.
+    if (typeof window.onMenuLoaded === 'function') window.onMenuLoaded();
     return true;
   } catch (e) {
     console.warn('[Grill&Go] Firestore menu load failed — using static menu-data.js', e);
@@ -189,10 +193,13 @@ window.rgCheckIsAdmin = async function rgCheckIsAdmin(uid) {
 };
 
 // Resolves once (never rejects) after attempting to overlay live menu +
-// settings data, or after a 4s timeout — whichever comes first — so a slow
-// or unreachable Firestore never blocks the page from rendering.
+// settings data, or after an 8s timeout — whichever comes first — so a slow
+// or unreachable Firestore never blocks the page from rendering. The
+// underlying loads keep running past the timeout and, if they land late,
+// call window.onMenuLoaded() (see rgLoadMenu above) so pages can re-render
+// with the real data instead of being stuck on the static fallback.
 window.rgReady = (async () => {
-  const timeout = new Promise((res) => setTimeout(res, 4000));
+  const timeout = new Promise((res) => setTimeout(res, 8000));
   await Promise.race([
     Promise.all([window.rgLoadMenu(), window.rgLoadSettings()]),
     timeout
