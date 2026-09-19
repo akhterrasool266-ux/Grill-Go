@@ -80,7 +80,15 @@
     </div>
   `).join('');
 
-  document.getElementById('catScroll').innerHTML = MENU_CATEGORIES.map(c => `
+  // Dedupe by name so a duplicate category doc (e.g. demo data imported
+  // twice) doesn't show the same category chip more than once on the home page.
+  const seenCatNames = new Set();
+  const uniqueHomeCats = MENU_CATEGORIES.filter(c => {
+    if (seenCatNames.has(c.name)) return false;
+    seenCatNames.add(c.name);
+    return true;
+  });
+  document.getElementById('catScroll').innerHTML = uniqueHomeCats.map(c => `
     <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
       <div class="cat-chip">
         <div class="cat-emoji">${c.icon}</div>

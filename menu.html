@@ -54,10 +54,28 @@
   const params = new URLSearchParams(window.location.search);
   let activeCat = params.get('cat') || 'all';
 
+  // A category name can appear on more than one category doc (e.g. demo data
+  // imported twice from the admin panel). Group by name so every item that
+  // belongs to any of those duplicate docs still shows up together under one
+  // chip, instead of being split across near-identical categories.
+  function catNameById(id) {
+    return MENU_CATEGORIES.find(c => c.id === id)?.name;
+  }
+
+  function uniqueCats() {
+    const seen = new Set();
+    return MENU_CATEGORIES.filter(c => {
+      if (seen.has(c.name)) return false;
+      seen.add(c.name);
+      return true;
+    });
+  }
+
   function renderCats() {
-    const chips = [{ id: 'all', name: 'All', icon: '🔥' }, ...MENU_CATEGORIES];
+    const activeName = activeCat === 'all' ? 'all' : catNameById(activeCat);
+    const chips = [{ id: 'all', name: 'All', icon: '🔥' }, ...uniqueCats()];
     document.getElementById('catScroll').innerHTML = chips.map(c => `
-      <div class="cat-chip ${activeCat === c.id ? 'active' : ''}" onclick="setCat('${c.id}')">
+      <div class="cat-chip ${(c.id === 'all' ? activeName === 'all' : c.name === activeName) ? 'active' : ''}" onclick="setCat('${c.id}')">
         <div class="cat-emoji">${c.icon}</div>
         <div class="cat-name">${c.name}</div>
       </div>
@@ -75,11 +93,12 @@
   };
 
   function renderItems() {
+    const activeName = activeCat === 'all' ? 'all' : catNameById(activeCat);
     const items = activeCat === 'all'
       ? MENU_ITEMS
-      : MENU_ITEMS.filter(i => i.categoryId === activeCat);
+      : MENU_ITEMS.filter(i => catNameById(i.categoryId) === activeName);
 
-    const catName = activeCat === 'all' ? 'Full Menu' : MENU_CATEGORIES.find(c => c.id === activeCat)?.name;
+    const catName = activeCat === 'all' ? 'Full Menu' : activeName;
     document.getElementById('listTitle').textContent = catName;
 
     document.getElementById('itemList').innerHTML = items.map(item => `

@@ -205,9 +205,28 @@ function triggerInstall() {
   });
 }
 
+// ---------- Hidden admin access: tap the brand mark 3x within 1.5s ----------
+function setupAdminTripleTap() {
+  const el = document.getElementById('brandMark');
+  if (!el) return;
+  let taps = 0;
+  let resetTimer = null;
+  el.addEventListener('click', () => {
+    taps++;
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => { taps = 0; }, 1500);
+    if (taps >= 3) {
+      taps = 0;
+      clearTimeout(resetTimer);
+      window.location.href = 'admin.html';
+    }
+  });
+}
+
 // ---------- Init on every page ----------
 document.addEventListener('DOMContentLoaded', () => {
   updateCartBadge();
+  setupAdminTripleTap();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }

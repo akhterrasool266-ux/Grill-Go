@@ -345,6 +345,28 @@ img { max-width: 100%; display: block; }
 .summary-row { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 8px; color: var(--gray); }
 .summary-row.total { color: var(--dark); font-weight: 700; font-size: 16px; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
 
+.delivery-form {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.delivery-form .form-title { font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+.form-label { font-size: 11.5px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.3px; display: block; margin-bottom: 4px; }
+.form-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  margin-bottom: 12px;
+}
+.form-input:last-child { margin-bottom: 0; }
+.form-row { display: flex; gap: 10px; }
+.form-row > div { flex: 1; }
+
 .checkout-btn {
   width: 100%;
   background: var(--dark);

@@ -58,9 +58,12 @@
 </head>
 <body>
 
-  <div class="topbar">
-    <div class="topbar-title" id="brandMark">Grill & Go — Admin</div>
-    <div class="topbar-sub">Owner dashboard</div>
+  <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div class="topbar-title" id="brandMark">Grill & Go — Admin</div>
+      <div class="topbar-sub">Owner dashboard</div>
+    </div>
+    <a href="index.html" style="color:#cfc9bf;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;">← Back to site</a>
   </div>
 
   <div class="wrap">
@@ -613,11 +616,15 @@
       document.getElementById('orderList').innerHTML = rows.map(o => {
         const when = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : '';
         const itemsLine = (o.items || []).map(c => `${c.qty}× ${c.name}`).join(', ');
+        const custLine = o.customer
+          ? `${o.customer.name || ''} · ${o.customer.address || ''}${o.customer.city ? ', ' + o.customer.city : ''}`
+          : '';
         return `
           <div class="list-row">
             <div class="list-main">
               <div class="list-title">${o.currency || ''}${o.total ?? ''} <span class="badge ${o.status}">${(o.status || 'new').replace(/-/g,' ')}</span></div>
               <div class="list-sub">${itemsLine}</div>
+              ${custLine ? `<div class="list-sub">📍 ${custLine}</div>` : ''}
               <div class="list-sub">${when}</div>
             </div>
             <div class="list-actions">
