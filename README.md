@@ -12,10 +12,23 @@ Abhi ye **static/dummy data** (`js/menu-data.js`) se chal raha hai — deploy ka
 - Push notification handler service worker mein ready hai (Phase 4)
 - Poora system `js/config.js` se customize hota hai — naya client onboard karne ke liye sirf ye file badalni hai
 
-## Deploy karne ka tareeqa (tumhara existing workflow)
-1. Is zip ko extract karo
-2. GitHub repo mein purani files delete karo, ye naye upload kar do
-3. Cloudflare Pages auto-deploy kar dega
+## Deploy karne ka tareeqa
+Ye site Cloudflare Worker (static assets) ke tor par deploy hoti hai — `wrangler.toml` root mein hai.
+
+**Automatic deploy (GitHub Actions se, ab set up hai):**
+`main` branch par har push par `.github/workflows/deploy.yml` khud `wrangler deploy` chala deta hai.
+Isko kaam karne ke liye GitHub repo → Settings → Secrets and variables → Actions mein ye 2 secrets add karne zaroori hain (ek dafa):
+- `CLOUDFLARE_API_TOKEN` — Cloudflare dashboard → My Profile → API Tokens → "Edit Cloudflare Workers" template se banao
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare dashboard → sidebar mein Account ID (Workers & Pages overview page par dikhta hai)
+
+Jab tak ye secrets add nahi hote, workflow fail hoga (koi nuqsan nahi hoga, deploy bas nahi hoga).
+
+**Manual deploy (agar Actions setup na karna ho):**
+```
+npm install -g wrangler
+wrangler login
+wrangler deploy
+```
 
 ## Firebase connect karna (zaroori — abhi placeholder hai)
 1. https://console.firebase.google.com pe naya project banao
