@@ -17,6 +17,7 @@
   <div class="section">
     <div class="section-head"><div class="section-title">Your Cart</div></div>
     <div id="cartList"></div>
+    <div id="deliveryFormWrap"></div>
     <div id="cartSummaryWrap"></div>
   </div>
 
@@ -39,14 +40,41 @@
   await window.rgReady;
 
   const cur = RESTAURANT_CONFIG.currencySymbol;
+  const DELIVERY_INFO_KEY = `ezy_delivery_${RESTAURANT_CONFIG.restaurantId}`;
+
+  function getDeliveryInfo() {
+    try {
+      return JSON.parse(localStorage.getItem(DELIVERY_INFO_KEY)) || {};
+    } catch { return {}; }
+  }
+  function saveDeliveryInfo(info) {
+    localStorage.setItem(DELIVERY_INFO_KEY, JSON.stringify(info));
+  }
+
+  function renderDeliveryForm() {
+    const info = getDeliveryInfo();
+    document.getElementById('deliveryFormWrap').innerHTML = `
+      <div class="delivery-form">
+        <div class="form-title">Delivery details</div>
+        <label class="form-label">Full name</label>
+        <input class="form-input" id="custName" placeholder="Your name" value="${info.name ? info.name.replace(/"/g, '&quot;') : ''}">
+        <label class="form-label">City</label>
+        <input class="form-input" id="custCity" placeholder="e.g. Karachi" value="${info.city ? info.city.replace(/"/g, '&quot;') : ''}">
+        <label class="form-label">Complete address</label>
+        <input class="form-input" id="custAddress" placeholder="House #, street, area, landmark" value="${info.address ? info.address.replace(/"/g, '&quot;') : ''}">
+      </div>
+    `;
+  }
 
   function render() {
     const cart = getCart();
     const listEl = document.getElementById('cartList');
     const wrap = document.getElementById('cartSummaryWrap');
+    const formWrap = document.getElementById('deliveryFormWrap');
 
     if (cart.length === 0) {
       listEl.innerHTML = '';
+      formWrap.innerHTML = '';
       wrap.innerHTML = `
         <div class="empty-state">
           <div class="empty-emoji">🛍️</div>
@@ -54,6 +82,8 @@
         </div>`;
       return;
     }
+
+    renderDeliveryForm();
 
     listEl.innerHTML = cart.map((c, i) => `
       <div class="cart-item">
@@ -94,6 +124,15 @@
     const cart = getCart();
     if (!cart.length) return;
 
+    const name = document.getElementById('custName').value.trim();
+    const city = document.getElementById('custCity').value.trim();
+    const address = document.getElementById('custAddress').value.trim();
+    if (!name || !city || !address) {
+      toast('Please fill in your name, city and address');
+      return;
+    }
+    saveDeliveryInfo({ name, city, address });
+
     const btn = document.getElementById('checkoutBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
 
@@ -107,10 +146,11 @@
       items: cart,
       total,
       currency: cur,
-      restaurantName: RESTAURANT_CONFIG.name
+      restaurantName: RESTAURANT_CONFIG.name,
+      customer: { name, city, address }
     });
 
-    const msg = encodeURIComponent(`New order from ${RESTAURANT_CONFIG.name}:\n${lines.join('\n')}\n\nTotal: ${cur}${total}`);
+    const msg = encodeURIComponent(`New order from ${RESTAURANT_CONFIG.name}:\n${lines.join('\n')}\n\nTotal: ${cur}${total}\n\nDeliver to:\n${name}\n${address}, ${city}`);
     window.open(`https://wa.me/${RESTAURANT_CONFIG.whatsapp}?text=${msg}`, '_blank');
 
     if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Checkout'; }

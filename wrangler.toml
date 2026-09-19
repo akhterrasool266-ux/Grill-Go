@@ -3,3 +3,8 @@ compatibility_date = "2026-01-01"
 
 [assets]
 directory = "./"
+# Serve e.g. /admin as admin.html instead of falling back to index.html for
+# any unmatched path (some Cloudflare setups default extensionless/unknown
+# routes to a single-page-application fallback, which broke /admin).
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
