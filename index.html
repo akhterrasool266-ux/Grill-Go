@@ -24,12 +24,28 @@
     <button class="install-btn" onclick="triggerInstall()">Install</button>
   </div>
 
-  <div class="section">
-    <div class="item-grid" id="itemGrid"></div>
+  <div class="section" id="heroSection">
+    <div class="hero-slider" id="heroSlider"></div>
+    <div class="hero-nav-wrap">
+      <button class="hero-arrow" onclick="heroScroll(-1)">‹</button>
+      <div class="hero-dots" id="heroDots"></div>
+      <button class="hero-arrow" onclick="heroScroll(1)">›</button>
+    </div>
   </div>
 
-  <div class="section" id="offersSection">
-    <div class="offer-scroll" id="offerScroll"></div>
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Our Menu</div>
+      <a href="menu.html" class="pill-link">View All</a>
+    </div>
+    <div class="cat-scroll-h" id="catScrollHome"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Featured Items</div>
+    </div>
+    <div class="item-grid" id="itemGrid"></div>
   </div>
 
   <div class="section">
@@ -44,13 +60,13 @@
   </div>
 
   <div class="bottom-nav">
-    <a href="index.html" class="nav-item active"><span class="nav-icon">🏠</span>Home</a>
-    <a href="menu.html" class="nav-item"><span class="nav-icon">📋</span>Menu</a>
+    <a href="index.html" class="nav-item active"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></span>Home</a>
+    <a href="menu.html" class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,3 21,8 12,13 3,8"/><polyline points="3,12 12,17 21,12"/><polyline points="3,16 12,21 21,16"/></svg></span>Menu</a>
     <a href="cart.html" class="nav-item">
-      <div class="cart-fab">🛍️<span class="cart-badge" id="cartBadge" style="display:none;">0</span></div>
+      <div class="cart-fab"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="cart-badge" id="cartBadge" style="display:none;">0</span></div>
     </a>
-    <a href="offers.html" class="nav-item"><span class="nav-icon">🏷️</span>Offers</a>
-    <a href="login.html" class="nav-item"><span class="nav-icon">👤</span>Log In</a>
+    <a href="offers.html" class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 11 3.8A2 2 0 0 0 9.6 3H4a1 1 0 0 0-1 1v5.6a2 2 0 0 0 .8 1.4l9.6 9.6a2 2 0 0 0 2.8 0l4.4-4.4a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg></span>Offers</a>
+    <a href="login.html" class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>Log In</a>
   </div>
 
 <script src="js/config.js"></script>
@@ -64,12 +80,23 @@
     document.getElementById('brandTagline').textContent = RESTAURANT_CONFIG.tagline;
     const cur = RESTAURANT_CONFIG.currencySymbol;
 
-    document.getElementById('offerScroll').innerHTML = MENU_OFFERS.map(o => `
-      <div class="offer-card ${o.color}">
-        <div class="offer-title">${o.title}</div>
-        <div class="offer-sub">${o.subtitle}</div>
-        <a href="offers.html" class="offer-btn">Order Now</a>
-      </div>
+    renderHeroSlider();
+
+    // Dedupe by name so a duplicate category doc (e.g. demo data imported
+    // twice) doesn't show the same category chip more than once.
+    const seenCatNames = new Set();
+    const uniqueHomeCats = MENU_CATEGORIES.filter(c => {
+      if (seenCatNames.has(c.name)) return false;
+      seenCatNames.add(c.name);
+      return true;
+    });
+    document.getElementById('catScrollHome').innerHTML = uniqueHomeCats.map(c => `
+      <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
+        <div class="cat-chip">
+          <div class="cat-emoji">${c.icon}</div>
+          <div class="cat-name">${c.name}</div>
+        </div>
+      </a>
     `).join('');
 
     document.getElementById('itemGrid').innerHTML = MENU_ITEMS.map(item => `
@@ -110,6 +137,40 @@
       </div>
     `).join('');
   }
+
+  function renderHeroSlider() {
+    const slider = document.getElementById('heroSlider');
+    const dotsWrap = document.getElementById('heroDots');
+    if (!MENU_OFFERS.length) {
+      document.getElementById('heroSection').style.display = 'none';
+      return;
+    }
+    slider.innerHTML = MENU_OFFERS.map(o => `
+      <div class="hero-slide ${o.color}">
+        <div class="hero-badge">Best Offer</div>
+        <div class="hero-title">${o.title}</div>
+        <div class="hero-sub">${o.subtitle}</div>
+        <a href="offers.html" class="offer-btn">Order Now</a>
+      </div>
+    `).join('');
+    dotsWrap.innerHTML = MENU_OFFERS.map((_, i) => `<div class="hero-dot ${i === 0 ? 'active' : ''}"></div>`).join('');
+
+    let ticking = false;
+    slider.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const idx = Math.round(slider.scrollLeft / slider.clientWidth);
+        [...dotsWrap.children].forEach((d, i) => d.classList.toggle('active', i === idx));
+        ticking = false;
+      });
+    });
+  }
+
+  window.heroScroll = function heroScroll(dir) {
+    const slider = document.getElementById('heroSlider');
+    slider.scrollBy({ left: dir * slider.clientWidth, behavior: 'smooth' });
+  };
 
   // Re-render if the live Firestore menu finishes loading after our initial
   // paint (e.g. rgReady hit its timeout on a slow connection) — otherwise
