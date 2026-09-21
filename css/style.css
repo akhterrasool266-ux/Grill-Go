@@ -270,7 +270,7 @@ img { max-width: 100%; display: block; }
   gap: 5px;
   white-space: nowrap;
 }
-.add-btn::before { content: '🛍️'; font-size: 11px; }
+.add-btn svg { display: block; flex-shrink: 0; }
 .add-btn.added { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .bottom-nav {
