@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Grill & Go</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B1B1B">
+<meta name="theme-color" content="#3E5D34">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -24,25 +24,17 @@
     <button class="install-btn" onclick="triggerInstall()">Install</button>
   </div>
 
+  <div class="section">
+    <div class="item-grid" id="itemGrid"></div>
+  </div>
+
   <div class="section" id="offersSection">
-    <div class="section-head">
-      <div class="section-title">Today's Deals</div>
-      <a href="offers.html" class="section-link">See all</a>
-    </div>
     <div class="offer-scroll" id="offerScroll"></div>
   </div>
 
   <div class="section">
     <div class="section-head">
-      <div class="section-title">Our Menu</div>
-      <a href="menu.html" class="section-link">View all</a>
-    </div>
-    <div class="cat-scroll" id="catScroll"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Most Popular</div>
+      <div class="section-title">Most Popular Items</div>
     </div>
     <div class="item-list" id="popularList"></div>
   </div>
@@ -70,6 +62,7 @@
   function renderHome() {
     document.getElementById('brandMark').textContent = RESTAURANT_CONFIG.name;
     document.getElementById('brandTagline').textContent = RESTAURANT_CONFIG.tagline;
+    const cur = RESTAURANT_CONFIG.currencySymbol;
 
     document.getElementById('offerScroll').innerHTML = MENU_OFFERS.map(o => `
       <div class="offer-card ${o.color}">
@@ -79,24 +72,23 @@
       </div>
     `).join('');
 
-    // Dedupe by name so a duplicate category doc (e.g. demo data imported
-    // twice) doesn't show the same category chip more than once on the home page.
-    const seenCatNames = new Set();
-    const uniqueHomeCats = MENU_CATEGORIES.filter(c => {
-      if (seenCatNames.has(c.name)) return false;
-      seenCatNames.add(c.name);
-      return true;
-    });
-    document.getElementById('catScroll').innerHTML = uniqueHomeCats.map(c => `
-      <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
-        <div class="cat-chip">
-          <div class="cat-emoji">${c.icon}</div>
-          <div class="cat-name">${c.name}</div>
+    document.getElementById('itemGrid').innerHTML = MENU_ITEMS.map(item => `
+      <div class="item-card-grid" onclick="openItemModal('${item.id}')">
+        <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
+        <div class="item-info">
+          <div class="item-info-name-row">
+            <div class="item-name">${item.name}</div>
+            <span class="info-dot">i</span>
+          </div>
+          <div class="item-desc">${item.description}</div>
+          <div class="item-bottom">
+            <div class="item-price">${cur}${item.price}</div>
+            <button class="add-btn" onclick="event.stopPropagation(); openItemModal('${item.id}')">Add</button>
+          </div>
         </div>
-      </a>
+      </div>
     `).join('');
 
-    const cur = RESTAURANT_CONFIG.currencySymbol;
     // Falls back to showing every menu item when none are flagged "popular"
     // yet, so newly added admin products aren't hidden from the home page.
     const popular = MENU_ITEMS.filter(i => i.popular);
@@ -105,7 +97,10 @@
       <div class="item-card" onclick="openItemModal('${item.id}')">
         <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
         <div class="item-info">
-          <div class="item-name">${item.name}</div>
+          <div class="item-info-name-row">
+            <div class="item-name">${item.name}</div>
+            <span class="info-dot">i</span>
+          </div>
           <div class="item-desc">${item.description}</div>
           <div class="item-bottom">
             <div class="item-price">${cur}${item.price}</div>

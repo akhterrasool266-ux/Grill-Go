@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Menu — Grill & Go</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B1B1B">
+<meta name="theme-color" content="#3E5D34">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -20,8 +20,8 @@
   </div>
 
   <div class="section">
-    <div class="section-head">
-      <div class="section-title" id="listTitle">Full Menu</div>
+    <div class="section-head" style="justify-content:center;">
+      <div class="section-title" id="listTitle" style="color:var(--primary);text-align:center;width:100%;">Full Menu</div>
     </div>
     <div class="item-list" id="itemList"></div>
   </div>
@@ -103,7 +103,10 @@
       <div class="item-card" onclick="openItemModal('${item.id}')">
         <div class="item-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
         <div class="item-info">
-          <div class="item-name">${item.name}</div>
+          <div class="item-info-name-row">
+            <div class="item-name">${item.name}</div>
+            <span class="info-dot">i</span>
+          </div>
           <div class="item-desc">${item.description}</div>
           <div class="item-bottom">
             <div class="item-price">${cur}${item.price}</div>

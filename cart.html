@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Cart — Grill & Go</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B1B1B">
+<meta name="theme-color" content="#3E5D34">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -87,16 +87,15 @@
 
     listEl.innerHTML = cart.map((c, i) => `
       <div class="cart-item">
-        <div>
+        <div class="cart-item-img">${c.image ? `<img src="${c.image}">` : itemImagePlaceholder(c)}</div>
+        <div class="cart-item-body">
           <div class="cart-item-name">${c.qty} × ${c.name}</div>
           <div class="cart-item-meta">
             ${c.sizeName ? c.sizeName : ''}${c.addonNames.length ? ' • ' + c.addonNames.join(', ') : ''}
           </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
           <div class="item-price">${cur}${c.lineTotal}</div>
-          <button class="qty-btn" onclick="removeItem(${i})">✕</button>
         </div>
+        <button class="qty-btn" onclick="removeItem(${i})">✕</button>
       </div>
     `).join('');
 

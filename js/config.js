@@ -18,11 +18,11 @@ const RESTAURANT_CONFIG = {
 
   // Theme — colors change per client
   theme: {
-    primary: "#E8531C",     // charcoal-ember orange
-    primaryDark: "#B93E10",
-    dark: "#1B1B1B",
-    cream: "#FFF8F0",
-    accent: "#2D9C5A"
+    primary: "#3E5D34",     // dark olive green
+    primaryDark: "#2C4526",
+    dark: "#1B1E17",
+    cream: "#FFFFFF",
+    accent: "#C6D92B"        // lime green accent
   },
 
   // Feature toggles — per-client customization
