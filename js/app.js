@@ -93,36 +93,50 @@ function renderModal() {
   const cur = RESTAURANT_CONFIG.currencySymbol;
   let sizesHtml = '';
   if (item.sizes.length) {
-    sizesHtml = `<div class="modal-label">Size</div>` + item.sizes.map(s => `
+    sizesHtml = `<div class="modal-label">Size</div><div class="size-grid">` + item.sizes.map(s => `
       <div class="option-row ${modalState.size === s.id ? 'selected' : ''}" onclick="selectSize('${s.id}')">
-        <div class="option-left"><span class="radio-dot"></span>${s.name}</div>
-        <div class="option-extra">${s.extra > 0 ? '+' + cur + s.extra : ''}</div>
+        <span class="radio-dot"></span>
+        <div>
+          <div class="option-left" style="margin-bottom:2px;">${s.name}</div>
+          <div class="option-extra" style="margin-left:0;">${s.extra > 0 ? '+' + cur + s.extra : ''}</div>
+        </div>
       </div>
-    `).join('');
+    `).join('') + `</div>`;
   }
 
   let addonsHtml = '';
   if (item.addons.length) {
     addonsHtml = `<div class="modal-label">Addons</div>` + item.addons.map(a => `
-      <div class="option-row ${modalState.addons[a.id] ? 'selected' : ''}" onclick="toggleAddon('${a.id}')">
-        <div class="option-left"><span class="check-box"></span>${a.name}</div>
-        <div class="option-extra">${cur}${a.price}</div>
+      <div class="addon-row ${modalState.addons[a.id] ? 'selected' : ''}" onclick="toggleAddon('${a.id}')">
+        <div class="addon-img">🍽️</div>
+        <div class="addon-info">
+          <div class="addon-name">${a.name}</div>
+          <div class="addon-price">${cur}${a.price}</div>
+        </div>
+        <span class="check-box"></span>
       </div>
     `).join('');
   }
 
   document.getElementById('modalBody').innerHTML = `
-    <button class="modal-close" onclick="closeItemModal()">✕</button>
-    <div class="modal-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
-    <div class="modal-title">${item.name}</div>
-    <div class="modal-desc">${item.description}</div>
-    <div class="modal-price">${cur}${item.price}</div>
+    <div class="modal-head">
+      <div class="modal-img">${item.image ? `<img src="${item.image}">` : itemImagePlaceholder(item)}</div>
+      <div class="modal-head-info">
+        <div class="modal-title-row">
+          <div class="modal-title">${item.name}</div>
+          <button class="modal-close" onclick="closeItemModal()">✕</button>
+        </div>
+        <div class="modal-desc">${item.description}</div>
+        <div class="modal-price">${cur}${item.price}</div>
+      </div>
+    </div>
 
-    <div class="modal-label">Quantity</div>
-    <div class="qty-row">
-      <button class="qty-btn" onclick="changeQty(-1)">−</button>
-      <span class="qty-val" id="qtyVal">${modalState.qty}</span>
-      <button class="qty-btn" onclick="changeQty(1)">+</button>
+    <div class="modal-label" style="display:flex;align-items:center;gap:10px;">Quantity:
+      <span class="qty-row" style="margin-bottom:0;">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-val" id="qtyVal">${modalState.qty}</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </span>
     </div>
 
     ${sizesHtml}
@@ -132,8 +146,7 @@ function renderModal() {
     <textarea class="note-input" rows="2" id="noteInput" placeholder="Add note (extra spicy, no onions, etc.)"></textarea>
 
     <button class="modal-cta" onclick="confirmAddToCart()">
-      <span>Add to Cart</span>
-      <span id="modalTotal">${cur}${calcModalTotal()}</span>
+      Add to Cart - <span id="modalTotal">${cur}${calcModalTotal()}</span>
     </button>
   `;
 }
@@ -163,6 +176,8 @@ function confirmAddToCart() {
   addToCart({
     itemId: activeItem.id,
     name: activeItem.name,
+    image: activeItem.image || '',
+    categoryId: activeItem.categoryId,
     qty: modalState.qty,
     sizeName: size ? size.name : null,
     addonNames,
