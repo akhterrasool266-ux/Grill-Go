@@ -24,12 +24,28 @@
     <button class="install-btn" onclick="triggerInstall()">Install</button>
   </div>
 
-  <div class="section">
-    <div class="item-grid" id="itemGrid"></div>
+  <div class="section" id="heroSection">
+    <div class="hero-slider" id="heroSlider"></div>
+    <div class="hero-nav-wrap">
+      <button class="hero-arrow" onclick="heroScroll(-1)">‹</button>
+      <div class="hero-dots" id="heroDots"></div>
+      <button class="hero-arrow" onclick="heroScroll(1)">›</button>
+    </div>
   </div>
 
-  <div class="section" id="offersSection">
-    <div class="offer-scroll" id="offerScroll"></div>
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Our Menu</div>
+      <a href="menu.html" class="pill-link">View All</a>
+    </div>
+    <div class="cat-scroll-h" id="catScrollHome"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Featured Items</div>
+    </div>
+    <div class="item-grid" id="itemGrid"></div>
   </div>
 
   <div class="section">
@@ -64,12 +80,23 @@
     document.getElementById('brandTagline').textContent = RESTAURANT_CONFIG.tagline;
     const cur = RESTAURANT_CONFIG.currencySymbol;
 
-    document.getElementById('offerScroll').innerHTML = MENU_OFFERS.map(o => `
-      <div class="offer-card ${o.color}">
-        <div class="offer-title">${o.title}</div>
-        <div class="offer-sub">${o.subtitle}</div>
-        <a href="offers.html" class="offer-btn">Order Now</a>
-      </div>
+    renderHeroSlider();
+
+    // Dedupe by name so a duplicate category doc (e.g. demo data imported
+    // twice) doesn't show the same category chip more than once.
+    const seenCatNames = new Set();
+    const uniqueHomeCats = MENU_CATEGORIES.filter(c => {
+      if (seenCatNames.has(c.name)) return false;
+      seenCatNames.add(c.name);
+      return true;
+    });
+    document.getElementById('catScrollHome').innerHTML = uniqueHomeCats.map(c => `
+      <a href="menu.html?cat=${c.id}" style="text-decoration:none;color:inherit;">
+        <div class="cat-chip">
+          <div class="cat-emoji">${c.icon}</div>
+          <div class="cat-name">${c.name}</div>
+        </div>
+      </a>
     `).join('');
 
     document.getElementById('itemGrid').innerHTML = MENU_ITEMS.map(item => `
@@ -110,6 +137,40 @@
       </div>
     `).join('');
   }
+
+  function renderHeroSlider() {
+    const slider = document.getElementById('heroSlider');
+    const dotsWrap = document.getElementById('heroDots');
+    if (!MENU_OFFERS.length) {
+      document.getElementById('heroSection').style.display = 'none';
+      return;
+    }
+    slider.innerHTML = MENU_OFFERS.map(o => `
+      <div class="hero-slide ${o.color}">
+        <div class="hero-badge">Best Offer</div>
+        <div class="hero-title">${o.title}</div>
+        <div class="hero-sub">${o.subtitle}</div>
+        <a href="offers.html" class="offer-btn">Order Now</a>
+      </div>
+    `).join('');
+    dotsWrap.innerHTML = MENU_OFFERS.map((_, i) => `<div class="hero-dot ${i === 0 ? 'active' : ''}"></div>`).join('');
+
+    let ticking = false;
+    slider.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const idx = Math.round(slider.scrollLeft / slider.clientWidth);
+        [...dotsWrap.children].forEach((d, i) => d.classList.toggle('active', i === idx));
+        ticking = false;
+      });
+    });
+  }
+
+  window.heroScroll = function heroScroll(dir) {
+    const slider = document.getElementById('heroSlider');
+    slider.scrollBy({ left: dir * slider.clientWidth, behavior: 'smooth' });
+  };
 
   // Re-render if the live Firestore menu finishes loading after our initial
   // paint (e.g. rgReady hit its timeout on a slow connection) — otherwise
