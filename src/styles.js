@@ -316,6 +316,25 @@ background-repeat:no-repeat;background-position:right 11px center}
 .count{font-size:13px;color:var(--muted);margin-left:auto}
 .wa{position:fixed;right:13px;bottom:74px;z-index:65;width:50px;height:50px;border-radius:50%;
 background:#25d366;display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.22)}
+.chatfab{position:fixed;left:13px;bottom:74px;z-index:65;height:50px;padding:0 16px;border-radius:999px;
+background:var(--brand);color:#fff;font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:8px;
+box-shadow:0 6px 20px rgba(0,0,0,.22)}
+.chatbox{position:fixed;left:0;right:0;bottom:0;z-index:130;height:min(560px,88vh);background:var(--card);
+border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);display:flex;flex-direction:column}
+.chatbox[hidden]{display:none}
+.chathd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+background:var(--brand);color:#fff;border-radius:16px 16px 0 0;font-weight:700}
+.chathd button{color:#fff;font-size:22px;line-height:1;padding:0 6px}
+.chatlog{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.chatmsg{max-width:85%;padding:9px 12px;border-radius:14px;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.chatmsg.bot{background:var(--accent);align-self:flex-start}
+.chatmsg.me{background:var(--brand);color:#fff;align-self:flex-end}
+.chatmsg a{text-decoration:underline}
+.chatform{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.chatform input{flex:1;min-width:0;height:42px;border:1px solid var(--line);border-radius:999px;padding:0 14px;font-size:16px;background:var(--bg)}
+.chatform button{height:42px;padding:0 16px;border-radius:999px;background:var(--brand);color:#fff;font-weight:700}
+.chatnote{font-size:11px;color:var(--muted);text-align:center;padding:0 10px 8px}
+@media(min-width:600px){.chatbox{left:auto;right:16px;bottom:16px;width:380px;border-radius:16px}.chathd{border-radius:16px 16px 0 0}}
 .toast{position:fixed;left:50%;bottom:86px;transform:translate(-50%,16px);z-index:120;
 background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:13.5px;
 font-weight:600;opacity:0;pointer-events:none;transition:.22s;max-width:90vw;text-align:center}
@@ -407,7 +426,7 @@ body{font-size:16px}
 *{animation-duration:.001ms!important;transition-duration:.001ms!important}
 html{scroll-behavior:auto}
 }
-@media print{header,footer,.buybar,.wa,.side,.scrim{display:none!important}}
+@media print{header,footer,.buybar,.wa,.chatfab,.chatbox,.side,.scrim{display:none!important}}
 `;
 }
 

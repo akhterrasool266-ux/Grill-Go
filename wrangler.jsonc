@@ -18,6 +18,10 @@
 
   "observability": { "enabled": true },
 
+  // Workers AI powers the chat assistant (no API key, no card needed).
+  // Remove this line to switch the chat widget off entirely.
+  "ai": { "binding": "AI" },
+
   // ==========================================================================
   //  VARIABLES — set these in the Cloudflare dashboard, NOT here.
   //  Workers & Pages → your worker → Settings → Variables and Secrets

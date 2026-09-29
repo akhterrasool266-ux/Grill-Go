@@ -115,11 +115,11 @@ Don't skip it because a change "looks cosmetic".
    sandbox before going live — don't claim they're verified.
 2. **No product photos yet.** Cloudinary cloud name + unsigned preset go in
    admin → Settings, then images upload from the gallery.
-3. **An AI chat assistant** was discussed: a `/api/chat` route on the Worker with
-   the API key as a secret, fed the live catalogue, settings and order status.
-   Must refuse medical advice — it's a skincare store and people will ask about
-   their skin. Cloudflare Workers AI is the preferred provider because it needs
-   no international card.
+3. **AI chat assistant is built** (`src/chat.js`, `public/chat.js`, `POST /api/chat`)
+   on Cloudflare Workers AI via the `AI` binding in `wrangler.jsonc`. Widget shows
+   only when the binding exists; admin can hide it with `chat_enabled:false` in
+   `store_settings`. Medical questions are refused server-side before the model is
+   called. Not yet tried against the real model or checked visually on a phone.
 4. **BNH and SPARQ** are still the old single-file, client-rendered sites on
    Firebase/Supabase. They get this same treatment once Skinova is approved.
 5. **Templates 3–5** for the reseller set (flash-deal, minimalist single-brand,

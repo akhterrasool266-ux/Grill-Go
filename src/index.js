@@ -22,6 +22,10 @@ import {
   errorPage, staticPage, STATIC_PAGES,
 } from './pages/flow.js';
 import {
+  CHAT_MODEL, MEDICAL_REPLY, isMedical, cleanMessages, orderLookupFrom,
+  catalogueText, orderText, systemPrompt, reply as chatReply,
+} from './chat.js';
+import {
   GATEWAYS, availableMethods, settlePayment, autoPostForm,
 } from './payments.js';
 
@@ -449,6 +453,50 @@ async function api({ request, env, db, url, path, site, ip }) {
     if (!o) return true;                 // gateway server-to-server callbacks
     try { return new URL(o).host === url.host; } catch { return false; }
   };
+
+  /* ------------------------------- AI chat -------------------------------- */
+  if (path === '/api/chat' && request.method === 'POST') {
+    if (!sameOrigin() || !request.headers.get('origin')) return json({ ok: false, error: 'forbidden' }, 403);
+    if (!env.AI) return json({ ok: false, error: 'chat_off' }, 404);
+    if (!rateLimit(ip, 'ch', 15, 60000)) return json({ ok: false, error: 'too_many' }, 429);
+    let body;
+    try { body = await request.json(); } catch { return json({ ok: false, error: 'bad_json' }, 400); }
+    const messages = cleanMessages(body && body.messages);
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'user') return json({ ok: false, error: 'empty' }, 400);
+    // Medical questions never reach the model.
+    if (isMedical(last.content)) return json({ ok: true, reply: MEDICAL_REPLY, refused: true });
+
+    const { cfg } = await loadShell(db, env);
+    const products = await db.select('products',
+      'is_active=eq.true&select=slug,name,price,original_price,stock,track_stock,short_description,category:categories(name)'
+      + '&order=is_featured.desc,created_at.desc&limit=60', { cache: 60 });
+
+    let orderCtx = '';
+    const lk = orderLookupFrom(messages);
+    if (lk) {
+      if (!lk.p6) {
+        orderCtx = 'ORDER LOOKUP: the customer gave an order number but not the last 6 digits of their phone. Ask for them.';
+      } else if (!rateLimit(ip, 'tr', 12, 60000)) {
+        orderCtx = 'ORDER LOOKUP: too many attempts. Ask the customer to try again in a minute.';
+      } else {
+        const o = await db.rpc('track_order', { p_number: lk.no, p_phone: lk.p6 }).catch(() => null);
+        orderCtx = orderText(o, cfg);
+      }
+    }
+    try {
+      const out = await env.AI.run(CHAT_MODEL, {
+        messages: [{ role: 'system', content: systemPrompt(cfg, catalogueText(products, cfg), orderCtx) }, ...messages],
+        max_tokens: 300, temperature: 0.3,
+      });
+      const text = chatReply(out);
+      if (!text) throw new Error('empty model reply');
+      return json({ ok: true, reply: text });
+    } catch (e) {
+      console.error('chat error', e);
+      return json({ ok: false, error: 'unavailable' }, 502);
+    }
+  }
 
   /* ---------------------------- suggestions ----------------------------- */
   if (path === '/api/suggest' && request.method === 'GET') {

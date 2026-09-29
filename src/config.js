@@ -149,6 +149,9 @@ export function resolveConfig(env = {}, settings = {}) {
       card:      !!(env.CARD_MERCHANT_ID      && env.CARD_SECRET),
     },
 
+    // Chat needs the Workers AI binding (wrangler.jsonc "ai"); admin can hide it.
+    chat:       !!env.AI && s.chat_enabled !== false,
+
     banners:    s.banners    || [],   // [{image, alt, href}]
     heroTitle:  s.hero_title || '',
     heroSub:    s.hero_sub   || '',

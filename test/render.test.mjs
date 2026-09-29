@@ -1,4 +1,4 @@
-import { get, P1 } from './fixtures.mjs';
+import { get, P1, env } from './fixtures.mjs';
 
 let fails = 0;
 function check(name, cond, extra = '') {
@@ -192,6 +192,56 @@ console.log('\n── payments ────────────────�
   const form = autoPostForm('https://gw.test/pay', { a: '1', b: '<script>' });
   check('auto-post form escapes values', form.includes('&lt;script&gt;') && !form.includes('value="<script>"'));
   check('auto-post form is noindex', form.includes('noindex,nofollow'));
+}
+
+console.log('\n── AI chat ────────────────────────────────');
+{
+  const post = (msgs, origin = 'https://shop.example.com') => get('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(origin ? { origin } : {}), 'cf-connecting-ip': '9.9.9.' + Math.floor(Math.random() * 200) },
+    body: JSON.stringify({ messages: msgs }),
+  });
+  let calls = []; let prompt = '';
+  const say = (q) => [{ role: 'user', content: q }];
+
+  check('no widget when AI binding missing', !(await (await get('/')).text()).includes('/chat.js'));
+  check('chat 404 when AI binding missing', (await post(say('hi'))).status === 404);
+
+  env.AI = { run: async (model, args) => { calls.push(model); prompt = args.messages[0].content; return { response: 'Our Vitamin C serum is Rs 1,850. /product/vitamin-c-brightening-serum' }; } };
+  check('widget script loaded when AI on', (await (await get('/')).text()).includes('/chat.js'));
+
+  let r = await post(say('price of vitamin c serum?')); let j = await r.json();
+  check('normal question answered', r.status === 200 && j.ok && j.reply.includes('1,850'));
+  check('catalogue fed to model', prompt.includes('Vitamin C Brightening Serum') && prompt.includes('Rs 1,850'));
+  check('system prompt forbids medical advice', /NEVER give medical advice/.test(prompt));
+  check('no secrets in prompt', !prompt.includes('SUPABASE') && !prompt.includes('eyJ'));
+
+  calls = [];
+  r = await post(say('Can you diagnose this rash? Is it eczema?')); j = await r.json();
+  check('medical question refused', j.ok && j.refused && /can't give medical advice/.test(j.reply));
+  check('medical question never reaches the model', calls.length === 0);
+  check('acne serum question is NOT blocked', (await (await post(say('best serum for acne marks'))).json()).refused !== true);
+
+  r = await post(say('where is ORD-2609-1001?')); await r.json();
+  check('order without phone asks for it', /last 6 digits/.test(prompt) && !prompt.includes('dispatched'));
+  r = await post(say('ORD-2609-1001 phone 123456')); await r.json();
+  check('verified order status injected', prompt.includes('ORDER LOOKUP RESULT') && prompt.includes('dispatched'));
+
+  check('cross-origin rejected', (await post(say('hi'), 'https://evil.com')).status === 403);
+  check('missing origin rejected', (await post(say('hi'), null)).status === 403);
+  check('empty transcript rejected', (await post([])).status === 400);
+
+  env.AI = { run: async () => { throw new Error('model down'); } };
+  r = await post(say('hello')); const t2 = await r.text();
+  check('model failure → friendly 502, no leak', r.status === 502 && !t2.includes('model down'));
+
+  env.AI = { run: async () => ({ response: 'ok' }) };
+  let last = 0;
+  for (let i = 0; i < 17; i++) {
+    last = (await get('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', origin: 'https://shop.example.com', 'cf-connecting-ip': '7.7.7.7' }, body: JSON.stringify({ messages: say('hi') }) })).status;
+  }
+  check('chat rate limited', last === 429);
+  delete env.AI;
 }
 
 console.log('\n── resilience ─────────────────────────────');
