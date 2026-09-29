@@ -186,6 +186,7 @@ ${cfg.whatsapp ? `<a class="wa" href="https://wa.me/${esc(cfg.whatsapp)}?text=${
     ga4: !!cfg.ga4Id,
   }).replace(/</g, '\\u003c')}</script>
 <script src="/app.js" defer></script>
+${cfg.chat ? '<script src="/chat.js" defer></script>' : ''}
 ${bodyEnd}
 </body>
 </html>`;
