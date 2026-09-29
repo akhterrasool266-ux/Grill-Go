@@ -1,0 +1,50 @@
+name: Keep Supabase Alive
+
+# Supabase pauses a free project after 7 days with no WRITE activity.
+# Reads do not count — so this writes one row every 3 days.
+#
+# Setup (once): GitHub → Settings → Secrets and variables → Actions → New secret
+#   SUPABASE_URL        https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY   eyJ...
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write        # lets the job commit the log below, which also stops
+                         # GitHub disabling this workflow after 60 idle days
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write to Supabase (a real write, not just a read)
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH \
+            "$URL/rest/v1/keep_alive?id=eq.1" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"last_ping\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}")
+          echo "Supabase responded: $code"
+          if [ "$code" != "204" ] && [ "$code" != "200" ]; then
+            echo "::error::Keep-alive write failed with HTTP $code"
+            exit 1
+          fi
+
+      - name: Log the run (keeps this repository active too)
+        run: |
+          mkdir -p .github
+          echo "Last keep-alive run: $(date -u +'%Y-%m-%d %H:%M UTC')" > .github/keep-alive-log.txt
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/keep-alive-log.txt
+          git commit -m "chore: keep-alive $(date -u +%F)" || echo "Nothing to commit"
+          git push

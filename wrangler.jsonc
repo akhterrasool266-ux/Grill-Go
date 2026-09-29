@@ -1,0 +1,39 @@
+{
+  // ==========================================================================
+  //  Cloudflare Workers configuration
+  //  Change "name" per customer — it becomes <name>.workers.dev
+  // ==========================================================================
+  "name": "skinova-store",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-27",
+
+  // Everything in /public is served straight from Cloudflare's edge
+  // (app.js, sw.js, admin.html, icons). Anything that is NOT a file in
+  // /public is handled by the Worker, which renders the page on the server.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  },
+
+  "observability": { "enabled": true },
+
+  // ==========================================================================
+  //  VARIABLES — set these in the Cloudflare dashboard, NOT here.
+  //  Workers & Pages → your worker → Settings → Variables and Secrets
+  //
+  //  Plain text:
+  //    SUPABASE_URL                https://xxxx.supabase.co
+  //    SUPABASE_ANON_KEY           eyJ...        (safe to expose, RLS protects it)
+  //    SITE_URL                    https://yourdomain.com   (optional)
+  //
+  //  SECRET (click "Encrypt"):
+  //    SUPABASE_SERVICE_ROLE_KEY   eyJ...        NEVER put this in any file
+  //    JAZZCASH_MERCHANT_ID / JAZZCASH_PASSWORD / JAZZCASH_SALT / JAZZCASH_ENV
+  //    EASYPAISA_STORE_ID / EASYPAISA_HASH_KEY / EASYPAISA_ENV
+  //    CARD_CHECKOUT_URL / CARD_MERCHANT_ID / CARD_SECRET
+  //
+  //  A payment method only appears at checkout once its variables exist.
+  // ==========================================================================
+  "vars": {}
+}
