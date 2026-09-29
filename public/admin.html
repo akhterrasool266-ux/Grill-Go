@@ -565,19 +565,36 @@ $('#pform').slug.addEventListener('input', (e) => {
 });
 
 /* ---- Cloudinary upload (unsigned preset — no secret in the browser) ---- */
+// Phone photos are 4-12 MB and Cloudinary's free plan rejects images over 10 MB.
+// Shrink to max 2000px / JPEG 85% in the browser first (falls back to the original).
+async function shrink(file, max = 2000) {
+  try {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 600 * 1024) return file;
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.85));
+    return blob && blob.size < file.size ? blob : file;
+  } catch { return file; }
+}
+async function cloudUpload(file, cloud, preset) {
+  const fd = new FormData();
+  fd.append('file', await shrink(file)); fd.append('upload_preset', preset);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: 'POST', body: fd });
+  const d = await r.json().catch(() => ({}));
+  if (!d.secure_url) throw new Error(d.error ? d.error.message : 'upload failed');
+  return d.secure_url;
+}
 $('#pimgs').addEventListener('change', async (e) => {
   const cloud = state.settings.cloudinary_cloud, preset = state.settings.cloudinary_preset;
   if (!cloud || !preset) { toast('Add your Cloudinary details in Settings first'); return; }
   const files = [...e.target.files];
   for (let i = 0; i < files.length; i++) {
     $('#upStatus').textContent = `Uploading ${i + 1} of ${files.length}…`;
-    const fd = new FormData();
-    fd.append('file', files[i]); fd.append('upload_preset', preset);
     try {
-      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: 'POST', body: fd });
-      const d = await r.json();
-      if (d.secure_url) pImages.push({ url: d.secure_url, alt: '' });
-      else throw new Error(d.error ? d.error.message : 'upload failed');
+      pImages.push({ url: await cloudUpload(files[i], cloud, preset), alt: '' });
     } catch (err) { toast('Upload failed: ' + err.message); }
     paintThumbs();
   }
@@ -858,11 +875,10 @@ async function settings() {
     const files = [...e.target.files]; const ta = $('#banners');
     for (let i = 0; i < files.length; i++) {
       $('#bstatus').textContent = `Uploading ${i + 1} of ${files.length}…`;
-      const fd = new FormData(); fd.append('file', files[i]); fd.append('upload_preset', preset);
-      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: 'POST', body: fd });
-      const d = await r.json();
-      if (d.secure_url) ta.value = (ta.value ? ta.value + '\n' : '') + d.secure_url;
-      else toast('Upload failed');
+      try {
+        const u = await cloudUpload(files[i], cloud, preset);
+        ta.value = (ta.value ? ta.value + '\n' : '') + u;
+      } catch (err) { toast('Upload failed: ' + err.message); }
     }
     $('#bstatus').textContent = ''; e.target.value = '';
   });
