@@ -12,11 +12,11 @@
 export const config = {
 
   // --- IDENTITY -------------------------------------------------------------
-  brandName:   '[BRAND_NAME]',
-  legalName:   '[BRAND_NAME]',
+  brandName:   'Skinova',
+  legalName:   'Skinova',
   tagline:     'Dermatologist-tested skincare, made for Pakistani skin',
   description:
-    'Shop authentic, dermatologist-tested skincare from [BRAND_NAME]. ' +
+    'Shop authentic, dermatologist-tested skincare from Skinova. ' +
     'Serums, cleansers, sunscreens and treatment kits delivered across ' +
     'Pakistan with cash on delivery.',
 
@@ -27,9 +27,9 @@ export const config = {
   ogImage:     '/icons/og.png',          // 1200x630 social share image
 
   // --- CONTACT --------------------------------------------------------------
-  whatsapp:    '923000000000',           // (admin) digits only, with 92
-  phone:       '+92 300 000 0000',       // (admin)
-  email:       'hello@example.com',      // (admin)
+  whatsapp:    '923232631530',           // (admin) digits only, with 92
+  phone:       '+92 323 2631530',        // (admin)
+  email:       'care@skinova.pk',        // (admin)
   address:     'Karachi, Pakistan',      // (admin)
 
   social: {                              // (admin) leave '' to hide the icon

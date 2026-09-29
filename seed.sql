@@ -14,7 +14,7 @@ with c as (select id, slug from public.categories)
 insert into public.products
   (slug, name, short_description, description, category_id, price, original_price, sku, brand,
    stock, rating, review_count, is_active, is_featured, is_trending, features, benefits, sort_order)
-select v.slug, v.name, v.short_desc, v.descr, c.id, v.price, v.was, v.sku, '[BRAND_NAME]',
+select v.slug, v.name, v.short_desc, v.descr, c.id, v.price, v.was, v.sku, 'Skinova',
        v.stock, v.rating, v.reviews, true, v.feat, v.trend, v.features::jsonb, v.benefits::jsonb, v.ord
 from (values
   ('vitamin-c-brightening-serum', 'Vitamin C Brightening Serum',
