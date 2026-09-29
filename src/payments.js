@@ -178,7 +178,10 @@ const EP_URL = {
 const easypaisa = {
   id: 'easypaisa',
   label: 'Easypaisa',
-  enabled: (env) => !!(env.EASYPAISA_STORE_ID && env.EASYPAISA_HASH_KEY),
+  // OFF until the callback can be trusted: verify() below does not check a
+  // signature, so a customer could forge a "paid" postback. Re-enable only after
+  // confirming each payment with Easypaisa's transaction-inquiry API.
+  enabled: () => false,
 
   async init({ order, env, site }) {
     const expiry = new Date(Date.now() + 60 * 60 * 1000);

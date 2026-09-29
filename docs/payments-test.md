@@ -82,6 +82,7 @@ Merchant ID, Password aur Integrity Salt milte hain.
 > hote hain, aur customer ko dono checkout form mein nazar aa jate hain. Yani
 > customer khud fake callback bhej kar order "paid" kar sakta hai. Amount na
 > bheje to amount check bhi skip ho jata hai.
+> **Abhi code mein Easypaisa band hai** (`enabled: () => false` in `src/payments.js`); variables daalne se bhi checkout par nahi aayega.
 > Sandbox test theek hai, lekin live se pehle callback ko Easypaisa ki
 > transaction inquiry API se confirm karwana hoga (ya provider ka hash verify
 > lagana hoga). Ye abhi baaki hai.
