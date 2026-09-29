@@ -111,9 +111,9 @@ Don't skip it because a change "looks cosmetic".
 
 1. **Payment gateways.** COD is live. JazzCash and card are code-complete and switch
    on when their Cloudflare secrets exist, but are not sandbox-verified (see
-   `docs/payments-test.md`). **Easypaisa is switched off in code** because its callback
-   is not signature-verified and could be forged; it needs the transaction-inquiry
-   check before `enabled` is turned back on.
+   `docs/payments-test.md`). **Easypaisa runs in manual-confirm mode**: its postback is
+   unsigned, so it never marks an order paid; the owner checks the Easypaisa portal and
+   presses "Mark paid" in admin. Automate later with the transaction-inquiry API.
 2. **Product photos.** Cloudinary cloud name + unsigned preset go in admin → Settings
    (`docs/images-setup.md`). Uploads are shrunk in the browser first.
 3. **AI chat assistant is built** (`src/chat.js`, `public/chat.js`, `POST /api/chat`)

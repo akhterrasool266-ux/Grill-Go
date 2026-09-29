@@ -189,6 +189,12 @@ console.log('\n── payments ────────────────�
     { JAZZCASH_SALT: 'SALT' });
   check('tampered amount → invalid signature', verifyGood.valid === false || verifyGood.state !== 'paid');
 
+  // Easypaisa postback is unsigned → it may NEVER yield 'paid'
+  const ep = (q) => GATEWAYS.easypaisa.verify(new Request('https://x/api/payments/easypaisa/callback?' + new URLSearchParams(q)), {});
+  check('easypaisa forged success is NOT paid', (await ep({ status: '0000', orderRefNumber: 'ORD-2609-1001-abc', transactionAmount: '2050' })).state === 'pending');
+  check('easypaisa success without amount is NOT paid', (await ep({ status: 'success', orderRefNumber: 'ORD-2609-1001-abc' })).state !== 'paid');
+  check('easypaisa failure stays failed', (await ep({ status: '0002', orderRefNumber: 'x' })).state === 'failed');
+
   const form = autoPostForm('https://gw.test/pay', { a: '1', b: '<script>' });
   check('auto-post form escapes values', form.includes('&lt;script&gt;') && !form.includes('value="<script>"'));
   check('auto-post form is noindex', form.includes('noindex,nofollow'));

@@ -239,7 +239,7 @@ export function paymentStatePage({ cfg, kind, orderNumber, message }) {
   const M = {
     success:   ['ok',   'check',  'Payment received',        'Your payment went through and your order is confirmed.'],
     failed:    ['bad',  'close',  'Payment failed',          'Your payment could not be completed. No money has been taken. You can try again or choose cash on delivery.'],
-    pending:   ['warn', 'truck',  'Payment pending',         'Your bank or wallet has not confirmed the payment yet. We will update your order as soon as it clears — this can take a few minutes.'],
+    pending:   ['warn', 'truck',  'Payment pending',         'Your bank or wallet has not confirmed the payment yet. We will update your order as soon as it is confirmed — this can take a little while.'],
     cancelled: ['warn', 'close',  'Payment cancelled',       'You cancelled the payment, so the order has not been confirmed.'],
     outofstock:['bad',  'box',    'Out of stock',            'Sorry — this item sold out before your order was completed. Nothing has been charged.'],
   };

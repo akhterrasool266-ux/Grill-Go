@@ -178,10 +178,7 @@ const EP_URL = {
 const easypaisa = {
   id: 'easypaisa',
   label: 'Easypaisa',
-  // OFF until the callback can be trusted: verify() below does not check a
-  // signature, so a customer could forge a "paid" postback. Re-enable only after
-  // confirming each payment with Easypaisa's transaction-inquiry API.
-  enabled: () => false,
+  enabled: (env) => !!(env.EASYPAISA_STORE_ID && env.EASYPAISA_HASH_KEY),
 
   async init({ order, env, site }) {
     const expiry = new Date(Date.now() + 60 * 60 * 1000);
@@ -202,15 +199,18 @@ const easypaisa = {
 
   async verify(request, env) {
     const d = await readCallback(request);
-    // Easypaisa posts back status + orderRefNumber. We additionally confirm the
-    // amount against our own record in settlePayment(), so a tampered postback
-    // cannot mark a cheaper order as paid.
+    // MANUAL CONFIRMATION MODE. This postback is NOT signed, so anyone who can
+    // see the reference and amount (the customer can) could forge a "success".
+    // A success therefore never marks anything paid: it is recorded as
+    // 'pending' and the shop owner checks the Easypaisa portal, then presses
+    // "Mark paid" in admin. Replace with a transaction-inquiry check to
+    // automate this.
     const code = String(d.status || d.responseCode || '');
     const ok = /^(0000|0|000)$/.test(code) || /^success$/i.test(code);
     return {
-      valid: true,                       // amount + reference are checked by the caller
+      valid: true,                       // unsigned — see note above; never yields 'paid'
       requireAmountMatch: true,
-      state: ok ? 'paid' : (/pending/i.test(code) ? 'pending' : 'failed'),
+      state: ok || /pending/i.test(code) ? 'pending' : 'failed',
       reference: d.orderRefNumber || d.orderRefNum || '',
       gatewayRef: d.transactionId || d.auth_code || '',
       amount: d.transactionAmount ? Number(d.transactionAmount) : null,

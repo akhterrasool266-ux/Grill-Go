@@ -76,16 +76,12 @@ Merchant ID, Password aur Integrity Salt milte hain.
 
 ## 2. Easypaisa
 
-> ⚠️ **LIVE MAT KARO — pehle ye theek hona chahiye.**
-> Code review mein mila: Easypaisa ka callback **signature verify nahi karta**
-> (`verify()` mein `valid: true` hardcoded hai). Sirf reference aur amount check
-> hote hain, aur customer ko dono checkout form mein nazar aa jate hain. Yani
-> customer khud fake callback bhej kar order "paid" kar sakta hai. Amount na
-> bheje to amount check bhi skip ho jata hai.
-> **Abhi code mein Easypaisa band hai** (`enabled: () => false` in `src/payments.js`); variables daalne se bhi checkout par nahi aayega.
-> Sandbox test theek hai, lekin live se pehle callback ko Easypaisa ki
-> transaction inquiry API se confirm karwana hoga (ya provider ka hash verify
-> lagana hoga). Ye abhi baaki hai.
+> **Easypaisa "manual confirm" mode mein hai.** Postback signed nahi hota, isliye
+> code kabhi order ko khud "paid" nahi karta. Success postback sirf **pending**
+> banata hai. Aap Easypaisa merchant portal mein payment dekhte hain, phir admin →
+> Orders → order kholo → **Mark paid** dabate hain (portal ka Transaction ID daalna
+> zaroori hai). Isse fake callback se order paid nahi ho sakta.
+> Automatic karna ho to Easypaisa ki transaction-inquiry API lagani hogi.
 
 **Cloudflare variables**
 
@@ -106,11 +102,12 @@ karwana pad sakta hai.
 **Pass checklist**
 
 - [ ] Sandbox page khula (`easypaystg.easypaisa.com.pk`).
-- [ ] Successful payment par `payment_state = paid`.
+- [ ] Successful payment par order **pending** rahe (paid nahi) aur customer ko "payment pending" page dikhe.
+- [ ] Admin mein **Mark paid** dabane (Transaction ID ke saath) par `payment_state = paid`, `status = confirmed`, aur `payment_transactions` mein `event = manual` row.
 - [ ] Failed / cancelled payment par `paid` nahi hua.
 - [ ] `payment_transactions` mein raw postback aayi.
 - [ ] Callback ke field names (`status`, `orderRefNumber`, `transactionAmount`) asli postback se match karte hain (raw column dekho).
-- [ ] **Security fix ke baad:** fake callback (sirf reference + amount) order paid nahi karta.
+- [ ] Fake callback (sirf reference + amount) order ko paid nahi karta, sirf pending.
 
 ---
 
@@ -152,7 +149,7 @@ Ye tests sandbox ke baad bhi karo:
 ## Live jane se pehle
 
 - [ ] Har gateway ke upar wali checklist poori.
-- [ ] Easypaisa ka callback-verification fix ho chuka ho.
+- [ ] Easypaisa: har payment portal mein dekh kar hi Mark paid karna (manual confirm).
 - [ ] `*_ENV` ko `live` karo aur **live credentials alag** se daalo (sandbox wale nahi).
 - [ ] Ek chhota real order (Rs 100–200) khud karo aur refund karwa ke dekho.
 - [ ] Provider ke live portal mein return/callback URL live domain par set ho.

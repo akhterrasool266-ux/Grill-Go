@@ -428,6 +428,9 @@ async function openOrder(id) {
       <div class="row" style="margin-top:8px"><span class="grow">Payment</span>
         <span class="pill ${o.payment_state === 'paid' ? 'ok' : o.payment_state === 'failed' ? 'bad' : 'warn'}">${esc(o.payment_method)} · ${esc(o.payment_state)}</span></div>
       ${(pays || []).filter((p) => p.gateway_ref).map((p) => `<div class="muted">Txn ref: ${esc(p.gateway_ref)}</div>`).join('')}
+      ${o.payment_method !== 'cod' && !['paid', 'refunded', 'cancelled'].includes(o.payment_state)
+        ? `<button class="btn p w" id="opaid" style="margin-top:10px">Mark paid</button>
+           <div class="muted" style="margin-top:4px">Only after you see this payment in your ${esc(o.payment_method)} merchant portal.</div>` : ''}
     </div>
     <label>Tracking note <span class="muted">(the customer sees this)</span></label>
     <input class="inp" id="otrack" value="${esc(o.tracking_note || '')}" placeholder="e.g. TCS 12345678">
@@ -444,6 +447,20 @@ async function openOrder(id) {
     }).eq('id', id);
     if (error) return toast(error.message);
     $('#odlg').close(); toast('Order updated'); go('orders');
+  };
+  if ($('#opaid')) $('#opaid').onclick = async () => {
+    const ref = prompt(`Confirm ${money(o.total)} received via ${o.payment_method}.\nEnter the transaction ID from the merchant portal:`);
+    if (ref === null) return;
+    if (!ref.trim()) return toast('Transaction ID is required');
+    const pay = (pays || [])[0];
+    if (!pay) return toast('No payment record for this order');
+    const e1 = (await sb.from('payments').update({ state: 'paid', gateway_ref: ref.trim(), error_code: null, error_message: null }).eq('id', pay.id)).error;
+    if (e1) return toast(e1.message);
+    const e2 = (await sb.from('orders').update({ payment_state: 'paid', ...(o.status === 'pending' ? { status: 'confirmed' } : {}) }).eq('id', id)).error;
+    if (e2) return toast(e2.message);
+    await sb.from('payment_transactions').insert({ payment_id: pay.id, order_id: id, gateway: pay.gateway, event: 'manual',
+      txn_ref: pay.reference, amount: pay.amount, signature_valid: null, raw: { marked_paid_by: 'admin', gateway_ref: ref.trim() } });
+    $('#odlg').close(); toast('Marked as paid'); go('orders');
   };
   $('#odel').onclick = async () => {
     if (!confirm('Delete this order permanently?')) return;
