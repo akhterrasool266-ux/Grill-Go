@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import { ActionForm, Field, Input, Select, SubmitButton } from '@/components/ui/action-form';
 import { ActionButton, ConfirmAction } from '@/components/ui/confirm-form';
 import { Alert } from '@/components/ui/primitives';
+import { useOfflineUser } from '@/components/offline/context';
+import { KeepOffline } from '@/components/offline/keep-offline';
+import { queueMarks } from '@/lib/offline/queue';
 import { addExamSubjects, createExam, generateResults, promoteStudents, publishResults, removeExamSubject, saveMarks, saveRemarks, setExamStatus } from '@/app/actions/exams';
 
 type Opt = { value: string; label: string };
@@ -54,19 +57,34 @@ export function ExamControls({ examId, status, canPublish, canLock }: { examId: 
 }
 
 export interface MarkRow { id: string; name: string; code: string; roll: string | null; marks: number | null; absent: boolean }
-export function MarksGrid({ examSubjectId, max, passing, rows, locked }: { examSubjectId: string; max: number; passing: number; rows: MarkRow[]; locked: boolean }) {
+export function MarksGrid({ examSubjectId, max, passing, rows, locked, label }: { examSubjectId: string; max: number; passing: number; rows: MarkRow[]; locked: boolean; label: string }) {
+  const userId = useOfflineUser();
   const [v, setV] = useState(() => Object.fromEntries(rows.map((r) => [r.id, { m: r.marks === null ? '' : String(r.marks), a: r.absent }])));
-  const [msg, setMsg] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ tone: 'ok' | 'bad' | 'warn'; text: string } | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
   const bad = (id: string) => { const n = Number(v[id]!.m); return !v[id]!.a && v[id]!.m !== '' && (!Number.isFinite(n) || n < 0 || n > max); };
   const anyBad = rows.some((r) => bad(r.id));
+  const filled = () => rows.filter((x) => v[x.id]!.a || v[x.id]!.m !== '');
+  async function keepOffline() {
+    const changed = rows.filter((r) => { const x = v[r.id]!; return !(x.a === r.absent && (x.a || (x.m === '' ? r.marks === null : Number(x.m) === r.marks))); });
+    if (!userId || changed.length === 0) { setMsg({ tone: changed.length === 0 ? 'ok' : 'bad', text: changed.length === 0 ? 'Nothing changed.' : 'Could not save on this phone. Try again when online.' }); return; }
+    try {
+      await queueMarks(userId, label, { exam_subject_id: examSubjectId, rows: changed.map((x) => ({ student_id: x.id, marks: v[x.id]!.m, absent: v[x.id]!.a, base: { marks: x.marks, absent: x.absent } })) });
+      window.dispatchEvent(new Event('erp-outbox-changed'));
+      setMsg({ tone: 'warn', text: 'No connection. Marks are saved on this phone and will be sent automatically when you are online. If someone else changed a mark meanwhile, theirs is kept and you will be told.' });
+    } catch { setMsg({ tone: 'bad', text: 'Could not save on this phone (storage unavailable).' }); }
+  }
   const save = () => start(async () => {
-    const r = await saveMarks({ exam_subject_id: examSubjectId, rows: rows.filter((x) => v[x.id]!.a || v[x.id]!.m !== '').map((x) => ({ student_id: x.id, marks: v[x.id]!.m, absent: v[x.id]!.a })) });
-    if (r.ok) { setMsg({ tone: 'ok', text: r.message ?? 'Saved.' }); router.refresh(); } else setMsg({ tone: 'bad', text: r.error });
+    if (!navigator.onLine) return keepOffline();
+    try {
+      const r = await saveMarks({ exam_subject_id: examSubjectId, rows: filled().map((x) => ({ student_id: x.id, marks: v[x.id]!.m, absent: v[x.id]!.a })) });
+      if (r.ok) { setMsg({ tone: 'ok', text: r.message ?? 'Saved.' }); router.refresh(); } else setMsg({ tone: 'bad', text: r.error });
+    } catch { await keepOffline(); }
   });
   return (
     <div className="space-y-3">
+      {!locked && <KeepOffline kind="marks" snapKey={`marks:${examSubjectId}:${rows.map((r) => r.id).sort()[0]}`} title={label} data={{ examSubjectId, max, passing, locked, rows }} />}
       <ul className="divide-y divide-line overflow-hidden rounded-[14px] border border-line bg-surface">
         {rows.map((r, i) => (
           <li key={r.id} className="flex items-center gap-3 px-3 py-2.5">

@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC = [
-  /^\/$/, /^\/login/, /^\/forgot-password/, /^\/reset-password/, /^\/auth\//, /^\/site\//, /^\/offline/,
+  /^\/$/, /^\/login/, /^\/forgot-password/, /^\/reset-password/, /^\/auth\//, /^\/site\//, /^\/offline/, /^\/offline-work/,
   /^\/api\/webhooks\//, /^\/api\/cron\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/icons\//, /^\/favicon/,
 ];
 
@@ -28,6 +28,9 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC.some((re) => re.test(path));
 
+  if (!data.user && !isPublic && path.startsWith('/api/')) {
+    return NextResponse.json({ ok: false, error: 'Please sign in again.' }, { status: 401 });   // APIs answer 401, they never redirect to an HTML login page
+  }
   if (!data.user && !isPublic) {
     const to = request.nextUrl.clone();
     to.pathname = '/login';

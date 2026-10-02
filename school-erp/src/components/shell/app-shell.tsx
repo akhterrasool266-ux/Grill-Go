@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { signOut, setLanguage } from '@/app/actions/shell';
+import { setLanguage } from '@/app/actions/shell';
 import { Icon } from '@/components/ui/icon';
 import { initials } from '@/lib/format';
 import { bottomNav, navFor } from '@/lib/nav';
@@ -10,6 +10,9 @@ import { createClient } from '@/lib/supabase/server';
 import { SideNav, BottomNav, type NavLinkGroup } from './nav-links';
 import { MobileMenu } from './mobile-menu';
 import { CampusSwitcher, ThemeToggle } from './topbar-controls';
+import { OfflineProvider } from '@/components/offline/context';
+import { OfflineStatus } from '@/components/offline/status';
+import { SignOutForm } from '@/components/offline/signout';
 
 export async function AppShell({ ctx, children }: { ctx: Ctx; children: ReactNode }) {
   const { t, lang } = await getT();
@@ -24,6 +27,7 @@ export async function AppShell({ ctx, children }: { ctx: Ctx; children: ReactNod
   const canSearch = ctx.permissions.some((p) => /^(students|staff|fees|payments|admissions|exams|library|transport|guardians)\.view$/.test(p));
 
   return (
+    <OfflineProvider userId={ctx.userId}>
     <div className="min-h-dvh lg:grid lg:grid-cols-[256px_1fr]">
       <aside className="no-print sticky top-0 hidden h-dvh flex-col border-e border-line bg-surface lg:flex">
         <Link href="/" className="flex items-center gap-3 px-5 py-4">
@@ -45,6 +49,7 @@ export async function AppShell({ ctx, children }: { ctx: Ctx; children: ReactNod
             </form>
           ) : <div className="flex-1" />}
           <div className="ms-auto flex items-center gap-1">
+            <OfflineStatus userId={ctx.userId} />
             {canSearch && <Link href="/search" aria-label={t('common.search')} className="rounded-lg p-2 text-muted hover:bg-surface-2 sm:hidden"><Icon name="Search" /></Link>}
             <CampusSwitcher campuses={ctx.campuses} current={campus} allLabel={t('common.allCampuses')} />
             <form action={setLanguage}>
@@ -61,7 +66,7 @@ export async function AppShell({ ctx, children }: { ctx: Ctx; children: ReactNod
               <div className="absolute end-0 mt-2 w-60 rounded-xl border border-line bg-surface p-2 shadow-xl">
                 <div className="px-3 py-2"><p className="truncate text-sm font-semibold">{ctx.profile.full_name}</p><p className="truncate text-xs text-muted">{ctx.profile.email}</p></div>
                 <Link href="/settings/profile" className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-2">{t('common.edit')} profile</Link>
-                <form action={signOut}><button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm text-bad hover:bg-bad-soft"><Icon name="LogOut" className="size-4" />{t('auth.signOut')}</button></form>
+                <SignOutForm><button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm text-bad hover:bg-bad-soft"><Icon name="LogOut" className="size-4" />{t('auth.signOut')}</button></SignOutForm>
               </div>
             </details>
           </div>
@@ -72,5 +77,6 @@ export async function AppShell({ ctx, children }: { ctx: Ctx; children: ReactNod
       <BottomNav items={bottom} moreLabel={t('common.more')} />
       <MobileMenu groups={linkGroups} title={t('common.more')} closeLabel={t('common.close')} />
     </div>
+    </OfflineProvider>
   );
 }

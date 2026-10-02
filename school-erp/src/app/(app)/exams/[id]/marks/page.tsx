@@ -37,7 +37,7 @@ export default async function MarksPage({ params, searchParams }: { params: Prom
         {sections.length > 1 && <select name="section" defaultValue={sp.section ?? ''} className="input sm:w-40" aria-label="Section"><option value="">All sections</option>{sections.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>}
         <button className="rounded-[10px] bg-brand px-4 py-2 text-sm font-medium text-brand-fg">Open</button></form>
       {!paper ? <Card><EmptyState title="Choose a paper to enter marks" /></Card> : rows.length === 0 ? <Card><EmptyState title="No students found" hint="Teachers only see the sections they are assigned to." /></Card>
-        : <MarksGrid key={`${paper.id}-${sp.section}`} examSubjectId={paper.id} max={Number(paper.max_marks)} passing={Number(paper.passing_marks)} rows={rows} locked={locked} />}
+        : <MarksGrid key={`${paper.id}-${sp.section}`} label={`${e.name} · ${paper.subjects?.name ?? 'Paper'} · ${paper.classes?.name ?? ''}${sp.section ? ' ' + (sections.find((x: any) => x.id === sp.section)?.name ?? '') : ''}`.trim()} examSubjectId={paper.id} max={Number(paper.max_marks)} passing={Number(paper.passing_marks)} rows={rows} locked={locked} />}
     </>
   );
 }

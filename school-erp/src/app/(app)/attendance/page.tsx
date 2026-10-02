@@ -60,7 +60,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
       )}
       {sectionId && students.length === 0 && <Card><EmptyState title="No active students in this section" /></Card>}
       {sectionId && students.length > 0 && (
-        canWrite ? <AttendanceSheet key={`${sectionId}-${date}`} sectionId={sectionId} date={date} canCorrect={can(ctx, 'attendance.edit')} locked={false}
+        canWrite ? <AttendanceSheet key={`${sectionId}-${date}`} sectionId={sectionId} sectionLabel={(() => { const sc = sections.find((x) => x.id === sectionId); return sc ? `${sc.classes?.name ?? ''} ${sc.name}`.trim() : 'Class'; })()} date={date} canCorrect={can(ctx, 'attendance.edit')} locked={false}
           students={students.map((s) => ({ id: s.id, name: s.full_name, code: s.student_code, roll: s.roll_no, status: marks[s.id]?.status ?? null, remarks: marks[s.id]?.remarks ?? null }))} />
           : <Alert tone="info">You can view attendance but not mark it.</Alert>
       )}
