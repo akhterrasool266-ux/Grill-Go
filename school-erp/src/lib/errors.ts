@@ -7,6 +7,7 @@ export interface DbErrorLike { code?: string; message?: string; details?: string
 
 const TOKENS: Record<string, string> = {
   not_authenticated: 'Your session has expired. Please sign in again.',
+  offline_window_exceeded: 'Offline attendance can be sent up to 3 days late. Ask an administrator to enter it.',
   permission_denied: "You don't have permission to do that.",
   invalid_amount: 'Please enter a valid amount greater than zero.',
   amount_too_large: 'That amount is too large. Please check it.',

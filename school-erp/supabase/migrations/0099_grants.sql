@@ -19,6 +19,7 @@ from authenticated;
 revoke insert, update, delete on audit_logs from authenticated, service_role;
 revoke insert, delete on profiles from authenticated;       -- accounts are created server-side
 revoke insert, update, delete on permissions from authenticated;
+revoke all on sync_receipts from authenticated;                -- only the sync functions (security definer) touch it
 revoke delete on schools from authenticated;
 revoke insert, delete on notifications from authenticated;
 revoke update on number_sequences from authenticated;
