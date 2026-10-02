@@ -47,3 +47,14 @@ Business events insert rows into `notification_logs` (`queued`). `/api/cron/disp
 ## Internationalisation, theme, PWA
 
 `src/lib/i18n/{en,ur}.ts`, cookie `erp_lang`; Urdu sets `dir="rtl"` and uses logical CSS properties. Theme via cookie `erp_theme`. PWA: manifest, generated icons, service worker that caches only static assets and an offline page (never authenticated HTML or API calls). Offline attendance keeps a *transient* queue in `localStorage` until it can be submitted — it is not a data store.
+
+## Offline sync (attendance and marks)
+
+`src/lib/offline/*` (IndexedDB outbox, snapshots, PIN gate), `POST /api/sync`, and the functions `sync_attendance` / `sync_marks` (migration 0021). The server is the only source of truth; the phone holds a read-only snapshot and a queue of operations.
+
+- **Idempotency:** each queued operation has a client-generated UUID stored in `sync_receipts` with its result; a replay returns the stored result and changes nothing. Receipts are bound to the user and not readable by clients.
+- **No silent overwrite:** attendance only inserts missing rows; marks use compare-and-set against the value the phone saw. Differences are returned as `conflicts` and shown to the user.
+- **Bounded:** attendance can be back-filled 3 days; locked/published exams reject.
+- **Why a JSON route, not a server action:** a queued item must still work after a redeploy changed server-action ids.
+- **Why only these two:** both are per-student rows that are naturally last-writer-visible and low-risk. Fees/payroll are money and must not be recorded on devices that can't see each other.
+- **Service worker:** caches only the data-free `/offline-work` shell and static assets; never signed-in HTML.

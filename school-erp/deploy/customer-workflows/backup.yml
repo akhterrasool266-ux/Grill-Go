@@ -1,0 +1,32 @@
+# OPTIONAL safety copy of this school's database, encrypted, kept as a private GitHub artifact for 14 days.
+# It is NOT a replacement for Supabase's own backups (paid plans). Needs two secrets:
+#   SUPABASE_DB_URL   (same as the Update database workflow)
+#   BACKUP_PASSPHRASE (long random text; WITHOUT IT THE BACKUP CANNOT BE OPENED — store it somewhere safe, not only here)
+# To restore: download the artifact, then   openssl enc -d -aes-256-cbc -pbkdf2 -in school.dump.enc -out school.dump   and   pg_restore -d <new db url> school.dump
+name: Backup (encrypted)
+on:
+  workflow_dispatch:
+  schedule: [{ cron: '30 21 * * *' }]   # 02:30 Pakistan time
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install matching pg_dump
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17
+      - name: Dump and encrypt
+        env: { DB: '${{ secrets.SUPABASE_DB_URL }}', PASS: '${{ secrets.BACKUP_PASSPHRASE }}' }
+        run: |
+          test -n "$DB" && test -n "$PASS" || { echo "::error::SUPABASE_DB_URL and BACKUP_PASSPHRASE secrets are required."; exit 1; }
+          /usr/lib/postgresql/17/bin/pg_dump "$DB" --no-owner --format=custom --schema=public --schema=private --schema=auth --schema=storage -f school.dump
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:PASS -in school.dump -out school.dump.enc
+          rm school.dump
+          ls -l school.dump.enc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: school-backup-${{ github.run_id }}
+          path: school.dump.enc
+          retention-days: 14

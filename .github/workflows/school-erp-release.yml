@@ -1,0 +1,57 @@
+# Pushes the current school-erp code to each customer's own GitHub repo. Their host (Vercel) redeploys automatically,
+# and their "Update database" workflow applies any new migrations. Run it from the Actions tab (works from a phone).
+#
+# Setup (once): add a repository secret CUSTOMER_REPOS_TOKEN = a GitHub token that can write to every customer repo
+#   (a classic token with "repo" scope, created by the account that was added as collaborator on each customer repo).
+# Customers are listed in school-erp/deploy/customers.txt, one "owner/repo" per line.
+# Customers must not edit code in their repo; everything school-specific lives in their database and host settings.
+name: School ERP release
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Leave empty for ALL customers, or one owner/repo to release to just that customer first (canary)"
+        required: false
+      note:
+        description: Release note (becomes the commit message)
+        required: false
+        default: Release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: school-erp/package-lock.json }
+      - name: Must pass before anything is sent
+        working-directory: school-erp
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+      - name: Push to customers
+        env:
+          TOKEN: ${{ secrets.CUSTOMER_REPOS_TOKEN }}
+          ONLY: ${{ inputs.only }}
+          NOTE: ${{ inputs.note }}
+        run: |
+          test -n "$TOKEN" || { echo "::error::Add the CUSTOMER_REPOS_TOKEN secret."; exit 1; }
+          VERSION=$(node -p "require('./school-erp/package.json').version")
+          LIST=$(grep -v '^\s*#' school-erp/deploy/customers.txt | sed '/^\s*$/d')
+          [ -n "$ONLY" ] && LIST="$ONLY"
+          [ -n "$LIST" ] || { echo "No customers listed."; exit 0; }
+          FAILED=0
+          for REPO in $LIST; do
+            echo "::group::$REPO"
+            rm -rf /tmp/cust && if git clone --quiet "https://x-access-token:${TOKEN}@github.com/${REPO}.git" /tmp/cust; then
+              rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --include '.env.example' --exclude '.env*' --exclude 'deploy/customers.txt' --exclude 'test/e2e' --exclude '.github' school-erp/ /tmp/cust/
+              mkdir -p /tmp/cust/.github/workflows && cp school-erp/deploy/customer-workflows/*.yml /tmp/cust/.github/workflows/
+              cd /tmp/cust
+              git config user.name "release-bot"; git config user.email "release-bot@users.noreply.github.com"
+              git add -A
+              if git diff --cached --quiet; then echo "already up to date"; else git commit -q -m "${NOTE:-Release} (v${VERSION})" && git push --quiet origin HEAD && echo "released v${VERSION}"; fi || FAILED=1
+              cd - >/dev/null
+            else echo "::error::could not clone $REPO (is the token's account a collaborator?)"; FAILED=1; fi
+            echo "::endgroup::"
+          done
+          exit $FAILED

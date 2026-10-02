@@ -1,0 +1,31 @@
+# Applies new database migrations to THIS school's Supabase project.
+# Runs by itself when a release changes supabase/migrations, or by hand from the Actions tab (also works from a phone).
+# One-time setup: repo → Settings → Secrets and variables → Actions → New secret
+#   SUPABASE_DB_URL = Supabase → Project Settings → Database → Connection string (use the "Session pooler" URI, replace [YOUR-PASSWORD])
+name: Update database
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status = only show what is pending; up = apply; baseline = DB was set up by hand, mark as applied"
+        default: up
+        type: choice
+        options: [status, up, baseline]
+  push:
+    branches: [main]
+    paths: ['supabase/migrations/**']
+concurrency: { group: database-migrations, cancel-in-progress: false }
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Check the secret exists
+        env: { DB: '${{ secrets.SUPABASE_DB_URL }}' }
+        run: test -n "$DB" || { echo "::error::Add the SUPABASE_DB_URL secret first (see the comment at the top of this file)."; exit 1; }
+      - name: Migrate
+        env: { DATABASE_URL: '${{ secrets.SUPABASE_DB_URL }}' }
+        run: node scripts/migrate.mjs ${{ github.event.inputs.mode || 'up' }}

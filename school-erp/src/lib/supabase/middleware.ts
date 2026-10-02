@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC = [
   /^\/$/, /^\/login/, /^\/forgot-password/, /^\/reset-password/, /^\/auth\//, /^\/site\//, /^\/offline/, /^\/offline-work/,
-  /^\/api\/webhooks\//, /^\/api\/cron\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/icons\//, /^\/favicon/,
+  /^\/api\/webhooks\//, /^\/api\/health$/, /^\/api\/cron\//, /^\/manifest\.webmanifest$/, /^\/sw\.js$/, /^\/icons\//, /^\/favicon/,
 ];
 
 export async function updateSession(request: NextRequest) {

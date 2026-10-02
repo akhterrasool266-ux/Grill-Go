@@ -1,0 +1,29 @@
+# One-time: creates this school and its owner login (no terminal needed). Run it from the Actions tab.
+# Secrets needed: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (Supabase → Project Settings → API).
+# The temporary password appears in this run's log. Anyone who can open the repo's Actions can read it, so after
+# you have copied it, DELETE THE RUN (⋯ → Delete workflow run). The owner must change it at first sign-in.
+name: Create school
+on:
+  workflow_dispatch:
+    inputs:
+      name: { description: School name, required: true }
+      slug: { description: "Web name, lowercase, e.g. al-noor", required: true }
+      owner_name: { description: Owner's name, required: true }
+      owner_email: { description: Owner's email (login), required: true }
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Create
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NAME: ${{ inputs.name }}
+          SLUG: ${{ inputs.slug }}
+          ONAME: ${{ inputs.owner_name }}
+          OEMAIL: ${{ inputs.owner_email }}
+        run: node scripts/create-school.mjs --name "$NAME" --slug "$SLUG" --owner-name "$ONAME" --owner-email "$OEMAIL"

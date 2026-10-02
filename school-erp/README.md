@@ -120,6 +120,8 @@ I never invent credentials: every provider reads its secrets from the environmen
 
 ---
 
+**Deploying for many customers, each on their own accounts:** see [docs/DEPLOY-CUSTOMER.md](docs/DEPLOY-CUSTOMER.md) (phone-friendly checklist, `scripts/migrate.mjs`, release and backup workflows in `deploy/`).
+
 ## 5. Features → where to find them
 
 | Area | Route(s) | Notes |
@@ -143,9 +145,31 @@ I never invent credentials: every provider reads its secrets from the environmen
 | Public website | `/site/<slug>`, `/site/<slug>/apply`, editor at `/website` | online admission form → Admissions |
 | Platform admin | `/platform` | schools, plans, subscriptions, feature switches, usage, tickets |
 | AI assistant | `/assistant` | see §7 |
+| Offline (attendance, marks) | `/offline-work`, “Keep available offline” buttons | see §5.1 |
 | PWA | installable; `manifest.webmanifest`, `sw.js`, `/offline` | the service worker never caches signed-in pages |
 
 Bilingual UI (English / اردو with RTL), dark mode, phone-first layout, global search (`/search`, header box).
+
+### 5.1 Working offline (attendance and marks only)
+
+**Scope on purpose:** only attendance sheets and marks sheets work offline. Fees, payroll, admissions and everything else need internet — money must never be recorded on two devices that cannot see each other.
+
+How it works:
+1. While online, a teacher taps **📥 Keep available offline** on a class's attendance page or a marks sheet. The first time, they choose a 4–8 digit PIN. A read-only copy of that class list (names, codes, current marks) is stored in the phone's IndexedDB for 14 days (refreshed each time the page is opened online).
+2. With no internet, `/offline-work` still opens (the service worker caches this one data-free page), asks for the PIN, and lets the teacher fill in attendance (today up to 3 days back) or marks.
+3. Their work waits in an on-phone **outbox**. When the phone is online again it is sent automatically (and from “Offline work → Send now”). A pill in the top bar shows *Offline / N waiting / N need attention*.
+4. The server applies each item **once** (every queued item has an id; sending it twice changes nothing) and **never overwrites silently**:
+   - Attendance: only fills what is missing. If someone already marked a different status, theirs is kept and the teacher is told.
+   - Marks: each mark carries the value the phone saw (“base”). It is applied only if the server still has that value; otherwise the server's value is kept and shown as a conflict (“yours: 64, kept: 50”).
+   - If the exam was locked/published while offline, or the back-fill window (3 days) has passed, the item is refused with a clear reason and kept on the phone to review or delete.
+5. Every synced item is audit-logged (`offline_sync`).
+
+Limits you should know:
+- **It is a temporary copy, not the school's record.** Sign-out wipes it (after a warning if items are unsent); ten wrong PINs wipe it; it expires after 14 days.
+- **The PIN is a gate, not encryption.** Offline, the system can't verify who holds the phone, so it asks for a PIN; data in the browser's storage is not encrypted. Tell teachers to keep their phone's screen lock on.
+- Corrections to attendance that is already saved, and any new student/class changes, need internet.
+- Tested: database functions (SQL tests), the outbox/sync/PIN logic (unit tests), and a real browser run against a production build with the network switched off (keep offline → work offline → reconnect → conflict shown → replay is a no-op → sign-out wipes). **Not tested** on real Android/iOS devices, on iOS Safari's storage eviction rules, or after a long (days) offline period with a changed login.
+- An installed PWA / reopened browser tab is recommended on Android. Browsers may evict storage on a nearly full phone.
 
 ---
 
@@ -240,6 +264,7 @@ End-to-end flows were driven through a real browser against a local PostgREST (s
 - WhatsApp/SMS/email/JazzCash/AI-live were never run against the real services (no credentials were available). Treat them as "implemented, unverified" until you run the sandbox checklist.
 - Subscriptions are recorded by hand; no billing/payment collection for SaaS plans.
 - Rate limiting is per instance (§4).
+- Offline works for attendance and marks only (§5.1); not tested on real phones.
 - Not load-tested.
 
 Licence: all rights reserved by the repository owner unless stated otherwise.
