@@ -24,7 +24,8 @@ export const optNum = (min = 0, max = 1e9) =>
   z.preprocess(blank, z.coerce.number({ error: 'Must be a number.' }).min(min, `Must be at least ${min}.`).max(max, 'Too large.').optional());
 export const int = (label = 'Value', min = 0, max = 1e6) =>
   z.preprocess(blank, z.coerce.number({ error: `${label} must be a number.` }).int(`${label} must be a whole number.`).min(min).max(max));
-export const bool = () => z.preprocess((v) => v === true || v === 'true' || v === 'on' || v === '1', z.boolean());
+// Checkboxes post a hidden "false" first and "true" when ticked → the last value wins.
+export const bool = () => z.preprocess((v) => { const x = Array.isArray(v) ? v[v.length - 1] : v; return x === true || x === 'true' || x === 'on' || x === '1'; }, z.boolean());
 export const oneOf = <T extends readonly [string, ...string[]]>(vals: T, label = 'Choice') =>
   z.enum(vals, { error: (i) => (i.input === undefined || i.input === '' ? `${label} is required.` : `${label} is not valid.`) });
 

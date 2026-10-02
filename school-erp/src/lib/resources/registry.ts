@@ -32,6 +32,12 @@ const R = {
 };
 
 const defs: ResourceDef[] = [
+  { key: 'enquiries', table: 'enquiries', title: 'Admission enquiries', singular: 'Enquiry', perm: 'admissions', campusScoped: true, hub: { href: '/admissions', label: 'Admissions' }, select: '*,classes(name)',
+    columns: [col('enquiry_no', 'No.'), col('child_name', 'Child'), col('classes.name', 'Class'), col('guardian_name', 'Parent'), col('phone', 'Phone'), col('source', 'Source', 'badge', true), col('followup_date', 'Follow-up', 'date', true), col('status', 'Status', 'badge')],
+    fields: [text('child_name', 'Child name', { required: true }), sel('gender', 'Gender', [['male', 'Boy'], ['female', 'Girl'], ['other', 'Other']]), rel('class_sought_id', 'Class wanted', R.classes), text('guardian_name', 'Parent / guardian', { required: true }), { name: 'phone', label: 'Phone', type: 'tel', required: true }, { name: 'email', label: 'Email', type: 'email' },
+      sel('source', 'How did they hear?', [['walk_in', 'Walk-in'], ['phone', 'Phone call'], ['website', 'Website'], ['whatsapp', 'WhatsApp'], ['referral', 'Referral'], ['social', 'Social media'], ['other', 'Other']], { default: 'walk_in', required: true }),
+      sel('status', 'Status', [['new', 'New'], ['contacted', 'Contacted'], ['visited', 'Visited school'], ['converted', 'Converted'], ['lost', 'Lost']], { default: 'new', required: true }), date('followup_date', 'Follow-up date'), area('notes', 'Notes')],
+    order: ['enquiry_no', false], searchCols: ['child_name', 'guardian_name', 'phone', 'enquiry_no'] },
   // ───────── academics ─────────
   { key: 'campuses', table: 'campuses', title: 'Campuses', singular: 'Campus', perm: 'campuses', hub: { href: '/settings', label: 'Settings' },
     columns: [col('name', 'Name'), col('code', 'Code'), col('city', 'City', 'text', true), col('phone', 'Phone', 'text', true), col('is_active', 'Active', 'bool')],
