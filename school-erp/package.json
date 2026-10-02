@@ -1,0 +1,42 @@
+{
+  "name": "school-erp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-campus School Management ERP (Next.js + Supabase) for Pakistani private schools.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:db": "bash scripts/db-reset.sh --test",
+    "icons": "node scripts/make-icons.mjs",
+    "seed:users": "node scripts/seed-demo-users.mjs",
+    "create:school": "node scripts/create-school.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.49.0",
+    "next": "^15.5.27",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "5.9",
+    "vitest": "^5.0.3"
+  }
+}

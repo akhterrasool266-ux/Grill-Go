@@ -353,3 +353,26 @@ select test.reset();
 select test.as_user(test.w('teacher2'));
 select test.eq((select count(*) from payroll)::int, 0, 'another teacher sees no payslips');
 select test.reset();
+
+-- ═════ create_student ═════
+select test.as_user(test.w('campus_admin'));
+do $$
+declare r jsonb; r2 jsonb; r3 jsonb;
+begin
+  r := public.create_student(test.w('c1'), jsonb_build_object('full_name', 'Omar Siddiqui', 'gender', 'male', 'class_id', test.w('cl1'), 'section_id', test.w('secA'),
+        'g_name', 'Siddiq Ahmad', 'g_phone', '0345-9876543', 'dob', '2017-02-01'));
+  perform test.ok((r ->> 'student_code') like 'STD-%', 'student code generated');
+  perform test.eq((r ->> 'linked_existing_family')::boolean, false, 'new family created for a new phone number');
+  r2 := public.create_student(test.w('c1'), jsonb_build_object('full_name', 'Hira Siddiqui', 'gender', 'female', 'class_id', test.w('cl1'), 'section_id', test.w('secB'),
+        'g_name', 'Siddiq Ahmad', 'g_phone', '03459876543'));
+  perform test.eq((r2 ->> 'linked_existing_family')::boolean, true, 'same phone number links the sibling to the same family');
+  perform test.eq(r2 ->> 'family_id', r ->> 'family_id', 'siblings share one family');
+  perform test.eq((select count(*) from guardians where family_id = (r ->> 'family_id')::uuid)::int, 1, 'guardian is not duplicated');
+  perform test.raises(format($q$select public.create_student(%L, '{"full_name":"X","gender":"male","g_name":"Y","section_id":"%s","class_id":"%s"}')$q$, test.w('c1'), test.w('secN'), test.w('cl1')),
+    'section_does_not_match_class', 'section must belong to the class and campus');
+  perform test.raises(format($q$select public.create_student(%L, '{"full_name":"X","gender":"male","g_name":"Y"}')$q$, test.w('c2')), 'permission_denied', 'cannot create students in another campus');
+  perform test.raises(format($q$select public.create_student(%L, '{"full_name":"X","gender":"male"}')$q$, test.w('c1')), 'guardian_name_required', 'a new family needs a guardian');
+  perform test.raises(format($q$select public.create_student(%L, '{"full_name":"Dup","gender":"male","g_name":"G","admission_no":"%s"}')$q$, test.w('c1'),
+    (select admission_no from students where id = test.w('s1'))), 'duplicate', 'duplicate admission number rejected');
+end $$;
+select test.reset();
