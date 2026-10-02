@@ -1,6 +1,6 @@
 /** `{{name}}` substitution. Unknown placeholders are removed rather than shown raw to parents. */
 export function renderTemplate(text: string, vars: Record<string, unknown>): string {
-  return text.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_, k: string) => (vars[k] === undefined || vars[k] === null ? '' : String(vars[k]))).replace(/[ \t]{2,}/g, ' ').trim();
+  return text.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_, k: string) => (!Object.hasOwn(vars, k) || vars[k] === undefined || vars[k] === null ? '' : String(vars[k]))).replace(/[ \t]{2,}/g, ' ').trim();
 }
 
 /** Pakistan-friendly: 0300-1234567 / +92 300 1234567 / 923001234567 → 923001234567. Returns null if it cannot be a mobile number. */

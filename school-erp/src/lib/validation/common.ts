@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const realDate = (s: string) => { const d = new Date(`${s}T00:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s; };
 const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/;
 
 /** HTML forms send "" for empty inputs; treat that as "not provided". */
@@ -14,8 +15,8 @@ export const uuid = (label = 'Selection') =>
   z.string({ error: `${label} is required.` }).regex(UUID_RE, `${label} is required.`);
 export const optUuid = () => z.preprocess(blank, z.string().regex(UUID_RE, 'Invalid selection.').optional());
 export const date = (label = 'Date') =>
-  z.string({ error: `${label} is required.` }).regex(DATE_RE, `${label} must be a valid date.`);
-export const optDate = () => z.preprocess(blank, z.string().regex(DATE_RE, 'Must be a valid date.').optional());
+  z.string({ error: `${label} is required.` }).regex(DATE_RE, `${label} must be a valid date.`).refine(realDate, `${label} must be a valid date.`);
+export const optDate = () => z.preprocess(blank, z.string().regex(DATE_RE, 'Must be a valid date.').refine(realDate, 'Must be a valid date.').optional());
 export const time = (label = 'Time') => z.string({ error: `${label} is required.` }).regex(TIME_RE, `${label} must be a valid time.`);
 export const optTime = () => z.preprocess(blank, z.string().regex(TIME_RE, 'Must be a valid time.').optional());
 export const num = (label = 'Value', min = 0, max = 1e9) =>
