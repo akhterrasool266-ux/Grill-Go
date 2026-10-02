@@ -65,6 +65,18 @@ const server = http.createServer(async (req, res) => {
         return u ? json(res, 200, { id: u.id, aud: 'authenticated', role: 'authenticated', email: u.email, app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() })
                  : json(res, 401, { code: 401, msg: 'invalid JWT' });
       }
+      if (route === '/admin/users' && req.method === 'POST') {
+        const body = JSON.parse((await readBody(req)).toString() || '{}');
+        if (userByEmail(body.email)) return json(res, 422, { code: 422, error_code: 'email_exists', msg: 'A user with this email address has already been registered' });
+        const id = crypto.randomUUID();
+        psql(`insert into auth.users(id,email) values ('${id}','${String(body.email).replace(/'/g, "''")}')`);
+        return json(res, 200, { id, aud: 'authenticated', role: 'authenticated', email: body.email, user_metadata: body.user_metadata ?? {}, app_metadata: {}, created_at: new Date().toISOString() });
+      }
+      if (route.startsWith('/admin/users/') && req.method === 'DELETE') {
+        psql(`delete from auth.users where id='${route.split('/').pop().replace(/[^0-9a-f-]/gi, '')}'`);
+        return json(res, 200, {});
+      }
+      if (route.startsWith('/admin/users/') && req.method === 'PUT') { await readBody(req); return json(res, 200, { id: route.split('/').pop() }); }
       if (route === '/logout') { res.writeHead(204); return res.end(); }
       if (route === '/recover') return json(res, 200, {});
       return json(res, 404, { msg: 'not implemented in test stack' });

@@ -5,10 +5,12 @@ import { check, formAction } from '@/lib/actions';
 import { currentCampus } from '@/lib/auth/session';
 import * as v from '@/lib/validation/common';
 
+const toArr = (x: unknown) => (Array.isArray(x) ? x : [x]);
+
 export const postJournal = formAction({
   permission: 'finance.create',
   schema: z.object({ entry_date: v.date('Date'), memo: v.text('Memo', 200), campus_id: v.optUuid(),
-    gl: z.preprocess((x) => (Array.isArray(x) ? x : [x]), z.array(z.string())), debit: z.preprocess((x) => (Array.isArray(x) ? x : [x]), z.array(z.string())), credit: z.preprocess((x) => (Array.isArray(x) ? x : [x]), z.array(z.string())) }),
+    gl: z.preprocess(toArr, z.array(z.string())), debit: z.preprocess(toArr, z.array(z.string())), credit: z.preprocess(toArr, z.array(z.string())) }),
 }, async ({ ctx, sb, input }) => {
   const campus = (await currentCampus(ctx)) ?? input.campus_id;
   if (!campus) throw { code: 'X', message: 'Choose a campus first.' };

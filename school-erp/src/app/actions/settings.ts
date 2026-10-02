@@ -8,6 +8,8 @@ import { ALL_PERMISSIONS } from '@/lib/auth/catalogue';
 import { createAdminClient } from '@/lib/supabase/admin';
 import * as v from '@/lib/validation/common';
 
+const toList = (x: unknown) => (Array.isArray(x) ? x : x ? [x] : []);
+
 // ── school profile ──
 export const saveSchool = formAction({
   permission: 'settings.edit',
@@ -89,7 +91,7 @@ export const saveNotificationPrefs = callAction({ schema: z.object({ prefs: z.ar
 // ── users & roles ──
 export const createUser = formAction({
   permission: 'users.create',
-  schema: z.object({ full_name: v.text('Full name', 120), email: z.string().trim().toLowerCase().email('Enter a valid email address.'), phone: v.optPhone(), roles: z.preprocess((x) => (Array.isArray(x) ? x : x ? [x] : []), z.array(z.string().max(40)).min(1, 'Choose at least one role.')), campuses: z.preprocess((x) => (Array.isArray(x) ? x : x ? [x] : []), z.array(v.uuid()).optional()), link_staff: v.optText(30), link_student: v.optText(30), link_family: v.optText(30) }),
+  schema: z.object({ full_name: v.text('Full name', 120), email: z.string().trim().toLowerCase().email('Enter a valid email address.'), phone: v.optPhone(), roles: z.preprocess(toList, z.array(z.string().max(40)).min(1, 'Choose at least one role.')), campuses: z.preprocess(toList, z.array(v.uuid()).optional()), link_staff: v.optText(30), link_student: v.optText(30), link_family: v.optText(30) }),
 }, async ({ ctx, sb, input }) => {
   // No privilege escalation: you may only hand out roles whose permissions you already hold (unless you manage roles).
   if (!ctx.permissions.includes('roles.manage')) {
@@ -121,7 +123,7 @@ export const createUser = formAction({
 
 export const updateUserAccess = formAction({
   permission: 'users.edit',
-  schema: z.object({ id: v.uuid(), full_name: v.text('Name', 120), phone: v.optPhone(), is_active: v.bool(), campuses: z.preprocess((x) => (Array.isArray(x) ? x : x ? [x] : []), z.array(v.uuid()).optional()), roles: z.preprocess((x) => (Array.isArray(x) ? x : x ? [x] : []), z.array(v.uuid()).optional()) }),
+  schema: z.object({ id: v.uuid(), full_name: v.text('Name', 120), phone: v.optPhone(), is_active: v.bool(), campuses: z.preprocess(toList, z.array(v.uuid()).optional()), roles: z.preprocess(toList, z.array(v.uuid()).optional()) }),
 }, async ({ ctx, sb, input }) => {
   if (input.id === ctx.userId) throw { code: 'X', message: 'You cannot change your own access. Ask another administrator.' };
   check(await sb.from('profiles').update({ full_name: input.full_name, phone: input.phone ?? null, is_active: input.is_active }).eq('id', input.id).select('id').single());
