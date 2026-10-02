@@ -54,12 +54,13 @@ create table role_templates (
   denies text[] not null default '{}',
   sort_order int not null
 );
+alter table role_templates enable row level security;   -- no policy: server/definer functions only
 insert into role_templates(code, name, name_ur, grants, denies, sort_order) values
  ('super_admin','Super Admin','سپر ایڈمن', array['%'], '{}', 1),
  ('owner','School Owner','اسکول مالک', array['%'], array['roles.manage'], 2),
  ('principal','Principal','پرنسپل',
    array['%.view','%.export','%.print','students.%','attendance.%','exams.%','marks.%','results.%','promotion.%','announcements.%','calendar.%','reports.%','timetable.%','academics.%','admissions.approve','leave.approve','payments.approve','financial.access','campus.all','classes.all','ai.use'],
-   array['roles.view','billing.view','billing.manage','users.view'], 3),
+   array['roles.view','billing.view','billing.manage','users.view','audit.view','audit.export'], 3),
  ('campus_admin','Campus Admin','کیمپس ایڈمن',
    array['students.%','guardians.%','admissions.%','academics.view','academics.create','academics.edit','timetable.%','attendance.%','staff_attendance.%','fees.view','fees.create','fees.print','fees.export','payments.view','payments.create','payments.print','staff.view','staff.create','staff.edit','leave.%','library.%','transport.%','hostel.%','documents.%','communication.%','announcements.%','calendar.%','reports.%','homework.view','exams.view','results.view','classes.all','users.view','ai.use'],
    array['attendance.qr'], 4),

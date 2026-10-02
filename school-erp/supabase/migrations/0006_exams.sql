@@ -103,8 +103,11 @@ begin
   if new.marks_obtained is not null and new.marks_obtained > v_max then
     raise exception 'marks_exceed_max: % > %', new.marks_obtained, v_max;
   end if;
-  if v_status in ('locked','published') and not private.has_perm('marks.approve') then
-    raise exception 'marks_locked: exam is %', v_status using errcode = '42501';
+  if v_status = 'published' then
+    raise exception 'marks_locked: exam is published, reopen it (with a reason) to change marks' using errcode = '42501';
+  end if;
+  if v_status = 'locked' and not private.has_perm('marks.approve') then
+    raise exception 'marks_locked: exam is locked' using errcode = '42501';
   end if;
   return new;
 end $$;

@@ -321,9 +321,9 @@ language sql stable security definer set search_path = public, private as $$
             where ta.section_id = p_section and st.profile_id = auth.uid()))
 $$;
 
-create or replace function private.current_year() returns uuid
+create or replace function private.current_year(p_school uuid default null) returns uuid
 language sql stable security definer set search_path = public, private as $$
-  select id from public.academic_years where school_id = private.current_school_id() and is_current
+  select id from public.academic_years where school_id = coalesce(p_school, private.current_school_id()) and is_current
 $$;
 
 -- ───────────────────────── enquiries & admissions ─────────────────────────

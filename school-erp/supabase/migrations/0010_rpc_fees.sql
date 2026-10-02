@@ -104,7 +104,7 @@ begin
 end $$;
 
 -- ───────────── generate_invoices ─────────────
-create or replace function public.generate_invoices(
+create or replace function private.generate_invoices_core(
   p_campus uuid, p_month date, p_due date,
   p_class uuid default null, p_student uuid default null,
   p_type text default 'monthly', p_category_ids uuid[] default null, p_label text default null)
@@ -115,11 +115,10 @@ declare
   v_created int := 0; v_skipped int := 0; v_nocharge int := 0; v_tr uuid; v_ho uuid;
   v_month_end date; v_elig numeric; v_rank int;
 begin
-  perform private.require_perm('fees.create', p_campus);
   if p_type not in ('monthly','adhoc') then raise exception 'invalid_invoice_type'; end if;
   if p_due is null then raise exception 'due_date_required'; end if;
   select school_id into v_school from campuses where id = p_campus;
-  v_year := private.current_year();
+  v_year := private.current_year(v_school);
   if v_year is null then raise exception 'no_current_academic_year'; end if;
 
   if p_type = 'monthly' then
@@ -250,9 +249,21 @@ begin
     v_created := v_created + 1;
   end loop;
 
-  perform public.log_audit('generate_invoices', 'fee_invoices', null, null,
-    jsonb_build_object('month', v_month, 'label', v_label, 'created', v_created, 'skipped', v_skipped, 'class', p_class), p_campus);
   return jsonb_build_object('created', v_created, 'skipped_existing', v_skipped, 'no_charges', v_nocharge);
+end $$;
+
+create or replace function public.generate_invoices(
+  p_campus uuid, p_month date, p_due date,
+  p_class uuid default null, p_student uuid default null,
+  p_type text default 'monthly', p_category_ids uuid[] default null, p_label text default null)
+returns jsonb language plpgsql security definer set search_path = public, private as $$
+declare r jsonb;
+begin
+  perform private.require_perm('fees.create', p_campus);
+  r := private.generate_invoices_core(p_campus, p_month, p_due, p_class, p_student, p_type, p_category_ids, p_label);
+  perform public.log_audit('generate_invoices', 'fee_invoices', null, null,
+    r || jsonb_build_object('month', p_month, 'label', p_label, 'class', p_class, 'type', p_type), p_campus);
+  return r;
 end $$;
 
 -- ───────────── payments ─────────────

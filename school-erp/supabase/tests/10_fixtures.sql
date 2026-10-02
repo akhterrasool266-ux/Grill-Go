@@ -51,7 +51,7 @@ grant execute on all functions in schema test to anon, authenticated;
 -- ───────── world ─────────
 create table test.world (k text primary key, v uuid);
 create or replace function test.w(p_key text) returns uuid language sql stable as $$ select v from test.world where k = p_key $$;
-grant select on test.world to anon, authenticated;
+grant select, insert on test.world to anon, authenticated;
 
 
 create or replace function test.mk_user(p_name text, p_role text, p_school uuid, p_campuses uuid[] default '{}') returns uuid
@@ -103,6 +103,7 @@ begin
   perform test.mk_user('exam', 'exam_controller', sa, array[c1]);
   perform test.mk_user('gate', 'security_gate', sa, array[c1]);
   perform test.mk_user('campus_admin', 'campus_admin', sa, array[c1]);
+  perform test.mk_user('officer', 'admission_officer', sa, array[c1]);
   perform test.mk_user('adminB', 'super_admin', sb, array[cb]);
 
   insert into classes (school_id, campus_id, name, level) values (sa, c1, 'Class 1', 1) returning id into cl1;
@@ -114,15 +115,15 @@ begin
   insert into sections (school_id, campus_id, class_id, name) values (sa, c2, cl_n, 'A') returning id into secN;
   insert into test.world values ('cl1', cl1), ('cl2', cl2), ('clN', cl_n), ('secA', secA), ('secB', secB), ('secN', secN);
 
-  insert into staff (school_id, campus_id, employee_code, full_name, profile_id, cnic)
-    values (sa, c1, 'EMP-0001', 'Teacher One', test.w('teacher1'), '35202-1234567-1') returning id into stf;
-  insert into staff (school_id, campus_id, employee_code, full_name, profile_id)
-    values (sa, c1, 'EMP-0002', 'Teacher Two', test.w('teacher2')) returning id into stf2;
+  insert into staff (school_id, campus_id, employee_code, full_name, profile_id, cnic, joining_date)
+    values (sa, c1, 'EMP-0001', 'Teacher One', test.w('teacher1'), '35202-1234567-1', date '2025-01-01') returning id into stf;
+  insert into staff (school_id, campus_id, employee_code, full_name, profile_id, joining_date)
+    values (sa, c1, 'EMP-0002', 'Teacher Two', test.w('teacher2'), date '2025-01-01') returning id into stf2;
   insert into test.world values ('staff1', stf), ('staff2', stf2);
   insert into teacher_assignments (school_id, campus_id, academic_year_id, section_id, staff_id, is_class_teacher)
     values (sa, c1, y, secA, stf, true), (sa, c1, y, secB, stf2, true);
 
-  insert into families (school_id, family_code, family_name) values (sa, 'FAM-0001', 'Khan Family') returning id into fam;
+  insert into families (school_id, family_code, family_name) values (sa, private.next_number('family', sa), 'Khan Family') returning id into fam;
   insert into test.world values ('fam', fam);
   insert into guardians (school_id, family_id, profile_id, full_name, relation, phone, whatsapp)
     values (sa, fam, test.w('parent1'), 'Imran Khan', 'father', '03001234567', '03001234567') returning id into g;
