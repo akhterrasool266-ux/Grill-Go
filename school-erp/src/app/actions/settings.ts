@@ -175,3 +175,25 @@ export const saveRolePermissions = callAction({ permission: 'roles.manage', sche
   revalidatePath('/settings/roles');
   return { message: `Saved: ${add.length} added, ${del.length} removed. Users get the change on their next page load.` };
 });
+
+// ── public website content ──
+const CMS = {
+  hero: z.object({ title: v.optText(120), subtitle: v.optText(240) }),
+  about: z.object({ text: v.optText(3000) }),
+  principal_message: z.object({ name: v.optText(120), text: v.optText(3000) }),
+  contact: z.object({ address: v.optText(300), phone: v.optText(60), email: v.optEmail(), hours: v.optText(120) }),
+  admissions: z.object({ open: v.bool(), note: v.optText(1500) }),
+  social: z.object({ facebook: v.optText(200), instagram: v.optText(200), youtube: v.optText(200) }),
+} as const;
+
+export const saveCms = formAction({ permission: 'cms.edit' }, async ({ ctx, sb, input }) => {
+  const raw = input as Record<string, unknown>;
+  const key = String(raw.__key ?? '') as keyof typeof CMS;
+  if (!(key in CMS)) throw { code: 'X', message: 'Unknown section.' };
+  const parsed = CMS[key].safeParse(nest(raw));
+  if (!parsed.success) { const { fieldErrorsOf } = await import('@/lib/validation/common'); const fe = fieldErrorsOf(parsed.error); throw { code: 'X', message: Object.values(fe)[0] ?? 'Please check the form.' }; }
+  if (key === 'social') for (const [k, val] of Object.entries(parsed.data as Record<string, string | undefined>)) if (val && !/^https?:\/\//i.test(val)) throw { code: 'X', message: `${k}: enter a full link starting with https://` };
+  check(await sb.from('cms_content').upsert({ school_id: ctx.school.id, key, value: parsed.data, updated_at: new Date().toISOString() }, { onConflict: 'school_id,key' }).select('key').single());
+  revalidatePath('/website');
+  return { message: 'Saved. Changes are live on your website.' };
+});

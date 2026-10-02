@@ -35,7 +35,7 @@ export const MODULES = {
   users: ['view', 'create', 'edit', 'delete'],
   roles: ['view', 'manage'],
   campuses: ['view', 'create', 'edit', 'delete'],
-  cms: ['view', 'edit', 'publish'],
+  cms: ['view', 'create', 'edit', 'delete', 'publish'],
   ai: ['use'],
   billing: ['view', 'manage'],
   financial: ['access'],

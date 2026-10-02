@@ -37,7 +37,7 @@ from (values
   ('users',           array['view','create','edit','delete']),
   ('roles',           array['view','manage']),
   ('campuses',        array['view','create','edit','delete']),
-  ('cms',             array['view','edit','publish']),
+  ('cms',             array['view','create','edit','delete','publish']),
   ('ai',              array['use']),
   ('billing',         array['view','manage']),
   ('financial',       array['access']),
