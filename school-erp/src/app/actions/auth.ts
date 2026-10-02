@@ -58,5 +58,10 @@ export async function updatePassword(_p: ActionResult | null, fd: FormData): Pro
   if (!data.user) return { ok: false, error: 'This reset link has expired. Request a new one.' };
   const { error } = await sb.auth.updateUser({ password: parsed.data.password });
   if (error) return { ok: false, error: 'Could not update the password. Try a different one.' };
+  const { data: prof } = await sb.from('profiles').select('preferences').eq('id', data.user.id).maybeSingle();
+  if (prof?.preferences && (prof.preferences as Record<string, unknown>).must_change_password) {
+    const { must_change_password: _m, ...rest } = prof.preferences as Record<string, unknown>;
+    await sb.from('profiles').update({ preferences: rest }).eq('id', data.user.id);
+  }
   redirect('/dashboard');
 }

@@ -18,3 +18,19 @@ create trigger admissions_number before insert on admissions for each row execut
 -- (columns stay effectively NOT NULL: the trigger fills them before the row is stored)
 alter table enquiries add constraint enquiries_no_present check (enquiry_no is not null) not valid;
 alter table admissions add constraint admissions_no_present check (application_no is not null) not valid;
+
+-- Queues an announcement as guardian messages (WhatsApp/SMS per school settings).
+create or replace function public.queue_announcement(p_announcement uuid) returns int
+language plpgsql security definer set search_path = public, private as $$
+declare a announcements; s record; v_n int := 0;
+begin
+  select * into a from announcements where id = p_announcement;
+  if not found then raise exception 'announcement_not_found'; end if;
+  perform private.require_perm('communication.create');
+  if a.school_id <> private.current_school_id() then raise exception 'permission_denied' using errcode = '42501'; end if;
+  for s in select id, campus_id from students where school_id = a.school_id and status = 'active'
+           and (a.campus_id is null or campus_id = a.campus_id) and (a.class_id is null or class_id = a.class_id) loop
+    v_n := v_n + private.queue_guardian_notifications(s.id, 'announcement', jsonb_build_object('title', a.title, 'message', left(a.body, 300)), s.campus_id);
+  end loop;
+  return v_n;
+end $$;

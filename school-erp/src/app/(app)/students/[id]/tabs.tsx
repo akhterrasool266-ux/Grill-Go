@@ -113,6 +113,7 @@ export async function FeesTab({ sb, s, ctx }: P) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Outstanding" value={pkr(outstanding)} tone={outstanding > 0 ? 'warn' : 'ok'} />
         <Stat label="Overdue vouchers" value={overdue.length} tone={overdue.length ? 'bad' : undefined} />
+        {process.env.JAZZCASH_MERCHANT_ID && outstanding > 0 && ctx.studentIds.includes(s.id) && <form method="post" action="/api/pay/jazzcash/start" className="col-span-2 flex items-center sm:col-span-1"><input type="hidden" name="student_id" value={s.id} /><button className="h-12 w-full rounded-[10px] bg-brand px-6 font-medium text-brand-fg">Pay online (JazzCash)</button></form>}
         {can(ctx, 'payments.create') && <div className="col-span-2 flex items-center sm:col-span-1"><LinkButton href={`/fees/collect?student=${s.student_code}`} size="lg" className="w-full">Collect fee</LinkButton></div>}
       </div>
       <Card><CardHeader title="Fee vouchers" />

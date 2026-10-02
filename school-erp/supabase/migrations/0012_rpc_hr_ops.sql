@@ -463,12 +463,12 @@ begin
 end $$;
 
 -- ═════════════ outbox (service role only) ═════════════
-create or replace function public.claim_notifications(p_limit int default 20) returns setof notification_logs
+create or replace function public.claim_notifications(p_limit int default 20, p_school uuid default null) returns setof notification_logs
 language plpgsql security definer set search_path = public, private as $$
 begin
   return query
   update notification_logs n set status = 'sending', attempts = attempts + 1
-  where n.id in (select id from notification_logs where status = 'queued' and scheduled_for <= now() and attempts < 3
+  where n.id in (select id from notification_logs where status = 'queued' and scheduled_for <= now() and attempts < 3 and (p_school is null or school_id = p_school)
                  order by scheduled_for for update skip locked limit p_limit)
   returning n.*;
 end $$;
@@ -530,9 +530,9 @@ begin
   return v_no;
 end $$;
 
-revoke execute on function public.claim_notifications(int), public.finish_notification(uuid, text, text, text, text),
+revoke execute on function public.claim_notifications(int, uuid), public.finish_notification(uuid, text, text, text, text),
   public.update_delivery_status(text, text, text, text), public.provision_user(uuid, uuid, text, text, text, text[], uuid[], jsonb),
   public.submit_online_admission(text, jsonb) from public, anon, authenticated;
-grant execute on function public.claim_notifications(int), public.finish_notification(uuid, text, text, text, text),
+grant execute on function public.claim_notifications(int, uuid), public.finish_notification(uuid, text, text, text, text),
   public.update_delivery_status(text, text, text, text), public.provision_user(uuid, uuid, text, text, text, text[], uuid[], jsonb),
   public.submit_online_admission(text, jsonb) to service_role;

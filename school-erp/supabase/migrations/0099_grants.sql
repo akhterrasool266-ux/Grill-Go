@@ -42,7 +42,8 @@ grant execute on all functions in schema public to authenticated, service_role;
 revoke execute on function public.bootstrap_school(text, text, text, text, text) from authenticated;
 revoke execute on function public.complete_online_payment(text, text, text, numeric) from authenticated;
 revoke execute on function public.log_audit_as(uuid, uuid, text, text, text, jsonb, jsonb) from authenticated;
-revoke execute on function public.claim_notifications(int), public.finish_notification(uuid, text, text, text, text),
+revoke execute on function public.claim_notifications(int, uuid), public.finish_notification(uuid, text, text, text, text),
   public.update_delivery_status(text, text, text, text), public.provision_user(uuid, uuid, text, text, text, text[], uuid[], jsonb),
   public.submit_online_admission(text, jsonb) from authenticated;
+revoke execute on function public.bump_usage(uuid, text, int), public.within_limit(uuid, text, int) from authenticated;
 alter default privileges in schema public revoke execute on functions from public, anon;
