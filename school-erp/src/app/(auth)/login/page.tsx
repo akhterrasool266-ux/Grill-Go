@@ -19,6 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (id?.profile) redirect(homeFor({ roles: id.roles, permissions: id.permissions }));
   if (id?.platform_admin) redirect('/platform');
   const errors: Record<string, string> = {
+    suspended: 'This school account is suspended. Please contact the school office or your software provider.',
     no_profile: 'Your login is not linked to a school yet. Ask your administrator to finish setting up your account.',
     link_expired: 'That link has expired. Please request a new one.',
   };

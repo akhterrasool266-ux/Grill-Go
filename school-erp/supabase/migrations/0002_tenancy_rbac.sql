@@ -156,7 +156,9 @@ create trigger audit_logs_immutable before update or delete on audit_logs
 -- ───────────────────────── security helpers ─────────────────────────
 create or replace function private.current_school_id() returns uuid
 language sql stable security definer set search_path = public, private as $$
-  select school_id from public.profiles where id = auth.uid() and is_active
+  -- A suspended or archived school has no tenant context, so every RLS policy fails closed for its users.
+  select p.school_id from public.profiles p join public.schools s on s.id = p.school_id
+  where p.id = auth.uid() and p.is_active and s.status = 'active'
 $$;
 
 create or replace function private.has_perm(p_code text) returns boolean

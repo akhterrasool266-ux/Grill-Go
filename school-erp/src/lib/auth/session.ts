@@ -49,7 +49,7 @@ export const requireUser = cache(async (): Promise<Ctx> => {
   if (!id) redirect('/login');
   if (!id.profile || !id.school) {
     if (id.platform_admin) redirect('/platform');
-    redirect('/login?error=no_profile');
+    redirect(id.profile && !id.school ? '/login?error=suspended' : '/login?error=no_profile');
   }
   return {
     userId: id.user_id, platformAdmin: id.platform_admin, profile: id.profile, school: id.school,

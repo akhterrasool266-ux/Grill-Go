@@ -23,3 +23,10 @@ begin
   u := gen_random_uuid(); insert into auth.users(id,email) values (u,'parent@demo.test');
   perform public.provision_user(u, s, 'Demo Parent', 'parent@demo.test', null, array['parent'], '{}', jsonb_build_object('guardian_id', g.id));
 end $$;
+
+-- A platform operator (no school profile)
+do $$ declare u uuid; begin
+  if exists (select 1 from auth.users where email = 'platform@demo.test') then return; end if;
+  u := gen_random_uuid(); insert into auth.users(id,email) values (u,'platform@demo.test');
+  insert into platform_admins(user_id) values (u);
+end $$;
